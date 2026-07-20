@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mech Gauge — はめあい公差・ねじ・三角計算｜機械加工の現場ツール</title>
+<meta name="description" content="穴と軸の公差を選ぶだけですきま・しまりを判定。ねじの下穴やテーパ角度も現場ですぐ引ける、機械加工・検査のためのiPhoneアプリ。">
+<style>
+:root{
+  --bg:#0E1116;--panel:#161C24;--panel2:#1C232D;--line:#28313D;
+  --ink:#F2F5F8;--dim:#9AA7B4;--hole:#4FC3F7;--shaft:#FFB74D;--ok:#34D399;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+  line-height:1.8;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px;}
+
+/* hero */
+.hero{padding:72px 0 56px;text-align:center;
+  background:radial-gradient(ellipse at 50% -10%,rgba(79,195,247,.14),transparent 60%);}
+.hero .icon{width:104px;height:104px;border-radius:23%;margin-bottom:20px;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);}
+.hero h1{font-size:2.4rem;letter-spacing:.02em;margin-bottom:8px;}
+.hero .tag{color:var(--dim);font-size:1.02rem;margin-bottom:28px;}
+.dl{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:#0E1116;
+  font-weight:800;font-size:1.05rem;padding:16px 34px;border-radius:16px;text-decoration:none;
+  transition:transform .12s;}
+.dl:hover{transform:translateY(-2px);}
+.dl small{display:block;font-size:.68rem;font-weight:600;opacity:.6;line-height:1.2;}
+.dl.web{background:var(--hole);color:#06121A;margin-left:12px;}
+.btnrow{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;}
+.req{color:var(--dim);font-size:.8rem;margin-top:14px;}
+@media(max-width:520px){.dl.web{margin-left:0;}}
+
+/* sections */
+section{padding:52px 0;border-top:1px solid var(--line);}
+h2{font-size:1.5rem;margin-bottom:8px;}
+.lead{color:var(--dim);margin-bottom:28px;}
+
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;}
+.card .ico{font-size:1.6rem;margin-bottom:10px;display:block;}
+.card h3{font-size:1.1rem;margin-bottom:10px;}
+.card.h h3{color:var(--hole);} .card.s h3{color:var(--shaft);} .card.t h3{color:var(--ok);}
+.card ul{list-style:none;color:var(--dim);font-size:.92rem;}
+.card li{padding-left:16px;position:relative;margin-bottom:5px;}
+.card li::before{content:"—";position:absolute;left:0;color:var(--line);}
+
+/* shots */
+.shots{display:flex;gap:16px;overflow-x:auto;padding-bottom:12px;}
+.shot{flex:0 0 220px;}
+.shot img{width:100%;border-radius:20px;border:1px solid var(--line);display:block;background:var(--panel2);}
+.shot .cap{color:var(--dim);font-size:.8rem;text-align:center;margin-top:8px;}
+.placeholder{aspect-ratio:9/19.5;background:var(--panel2);border:1px dashed var(--line);
+  border-radius:20px;display:flex;align-items:center;justify-content:center;
+  color:#4A5666;font-size:.8rem;text-align:center;padding:12px;}
+
+/* ux points */
+.ux{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+.ux div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;}
+.ux b{display:block;margin-bottom:4px;}
+.ux span{color:var(--dim);font-size:.88rem;}
+
+.note{background:var(--panel);border-left:3px solid var(--shaft);border-radius:0 12px 12px 0;
+  padding:16px 20px;color:var(--dim);font-size:.9rem;}
+
+footer{border-top:1px solid var(--line);padding:36px 0 60px;color:var(--dim);font-size:.85rem;}
+footer a{color:var(--hole);text-decoration:none;}
+footer a:hover{text-decoration:underline;}
+footer .links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
+@media(max-width:600px){.hero h1{font-size:1.9rem;}.hero{padding:52px 0 40px;}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="wrap">
+    <img class="icon" src="icons/icon_B_stamp_1024.png" alt="Mech Gauge アイコン">
+    <h1>Mech Gauge</h1>
+    <p class="tag">はめあい公差・ねじ寸法・三角関数<br>機械加工と検査の現場で、必要な数値を最短で。</p>
+    <div class="btnrow">
+      <a class="dl" href="#" id="appstoreLink">
+        App Store でダウンロード
+        <small>準備中</small>
+      </a>
+      <a class="dl web" href="app.html">
+        ブラウザで試す
+        <small>インストール不要</small>
+      </a>
+    </div>
+    <p class="req">iPhone / iOS 16.0 以上　—　完全オフライン動作　／　ブラウザ版はPC・スマホで動作</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>3つの機能</h2>
+    <p class="lead">図面を開いて、測って、判断する。その合間に必要になる計算だけを集めました。</p>
+    <div class="feat">
+      <div class="card h">
+        <span class="ico">⌀</span>
+        <h3>はめあい公差</h3>
+        <ul>
+          <li>穴 A〜ZC、軸 a〜zc に対応</li>
+          <li>等級 IT1〜18 まで全選択可能</li>
+          <li>「よく使う範囲」と「JIS全範囲」を切替</li>
+          <li>公差帯図で穴と軸の関係を可視化</li>
+          <li>すきま／中間／しまりを検印風に判定</li>
+          <li>H7/g6 など常用はめあいのプリセット</li>
+        </ul>
+      </div>
+      <div class="card s">
+        <span class="ico">⌇</span>
+        <h3>ねじ寸法</h3>
+        <ul>
+          <li>メートル並目・細目</li>
+          <li>ウイット W</li>
+          <li>管用平行 G（PF）</li>
+          <li>管用テーパ R・Rc（PT）</li>
+          <li>有効径・谷径・タップ下穴・二面幅</li>
+        </ul>
+      </div>
+      <div class="card t">
+        <span class="ico">△</span>
+        <h3>三角関数</h3>
+        <ul>
+          <li>わかっている2つから残りを自動計算</li>
+          <li>入力に連動して図が更新される</li>
+          <li>勾配加工・座標計算の検算に</li>
+          <li>テーパ：大径・小径・長さ → 片角と比</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>画面</h2>
+    <div class="shots">
+      <div class="shot"><img src="screenshots/screenshot_01_fit.png" alt="はめあい判定" loading="lazy"><div class="cap">はめあい判定</div></div>
+      <div class="shot"><img src="screenshots/screenshot_02_fit_full.png" alt="JIS全範囲の選択" loading="lazy"><div class="cap">JIS全範囲の選択</div></div>
+      <div class="shot"><img src="screenshots/screenshot_03_screw.png" alt="ねじ寸法" loading="lazy"><div class="cap">ねじ寸法</div></div>
+      <div class="shot"><img src="screenshots/screenshot_04_trig.png" alt="三角関数" loading="lazy"><div class="cap">三角関数</div></div>
+      <div class="shot"><img src="screenshots/screenshot_05_taper.png" alt="テーパ計算" loading="lazy"><div class="cap">テーパ計算</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>現場で使えること</h2>
+    <p class="lead">工場の環境を前提に設計しています。</p>
+    <div class="ux">
+      <div><b>大きな文字と選択肢</b><span>老眼鏡が必要な距離でも読める寸法設計</span></div>
+      <div><b>手袋のまま操作</b><span>タップ領域を大型化、左右スワイプで機能切替</span></div>
+      <div><b>ホイール選択</b><span>指ではじいて回すだけ。画面スクロールが最小限</span></div>
+      <div><b>通信不要</b><span>電波の入らない工場内でも全機能が動作</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="note">
+      本アプリが表示する数値は JIS B 0401 / ISO 286-1 ほか各規格に基づく<b>参考値</b>です。
+      製造・検査における最終判断は、必ず正規の規格票および図面指示に基づいて行ってください。
+      本アプリの利用により生じた損害について、開発者は責任を負いかねます。
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="links">
+      <a href="privacy_policy.html">プライバシーポリシー</a>
+      <a href="mailto:mechagauge.app@gmail.com" id="contactLink">お問い合わせ</a>
+    </div>
+    <p>本アプリは協賛企業のサポートを受けて開発・提供されています。<br>
+    協賛企業の情報はアプリ内でご確認いただけます。</p>
+    <p style="margin-top:14px;">&copy; 2026 Mech Gauge</p>
+  </div>
+</footer>
+
+</body>
+</html>
