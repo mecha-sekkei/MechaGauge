@@ -14,24 +14,33 @@
   --shaft:#FFB74D; --shaft-dim:rgba(255,183,77,.16);
   --screw:#B39DFF;
   --ok:#34D399; --mid:#FBBF24; --ng:#F87171; --accent:#4FC3F7;
+  --strength:#7DD3FC; --cut:#FCA5A5; --beam:#86EFAC;
   --r:16px; --tap:60px;
-  --nav-h:76px; --banner-h:64px;
+  --banner-h:64px;
   font-size:16px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
-  overscroll-behavior:none;}
-body{padding-bottom:calc(var(--nav-h) + var(--banner-h) + env(safe-area-inset-bottom) + 8px);}
-body.no-banner{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px);}
+  overscroll-behavior:none;
+  /* 閉じているドロワー（画面外へtranslate）が横スクロールを作らないように */
+  overflow-x:hidden;}
+body{padding-bottom:calc(var(--banner-h) + env(safe-area-inset-bottom) + 8px);}
+body.no-banner{padding-bottom:calc(env(safe-area-inset-bottom) + 8px);}
+body.drawer-open{overflow:hidden;}
 .num{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;}
 
-header{position:sticky;top:0;z-index:20;background:rgba(14,17,22,.9);backdrop-filter:blur(14px);
-  padding:calc(8px + env(safe-area-inset-top)) 14px 8px;border-bottom:1px solid var(--line);
-  display:flex;align-items:baseline;gap:8px;}
-header h1{font-size:1.05rem;margin:0;}
-header .sub{color:var(--ink-dim);font-size:.72rem;}
-.swipe-hint{margin-left:auto;color:var(--ink-dim);font-size:.68rem;}
+header{position:sticky;top:0;z-index:20;background:rgba(14,17,22,.92);backdrop-filter:blur(14px);
+  padding:calc(6px + env(safe-area-inset-top)) 10px 6px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:10px;}
+header .ttl{flex:1;min-width:0;text-align:center;}
+header h1{font-size:1.02rem;margin:0;line-height:1.2;}
+header .sub{display:block;color:var(--ink-dim);font-size:.68rem;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hbtn{flex:0 0 auto;width:46px;height:46px;border-radius:13px;background:var(--panel2);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;color:var(--ink);transition:transform .06s;}
+.hbtn:active{transform:scale(.92);background:#242D38;}
 
 .screen{display:none;padding:10px 10px 16px;max-width:560px;margin:0 auto;}
 .screen.active{display:block;animation:fade .18s ease;}
@@ -146,18 +155,93 @@ svg text{font-family:ui-monospace,"SF Mono",Menlo,monospace;}
   padding:9px 11px;font-size:.95rem;line-height:1.7;}
 .formula b{color:var(--ok);}
 
-/* ---- タブバー ---- */
-nav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;
-  background:rgba(16,20,26,.94);backdrop-filter:blur(16px);border-top:1px solid var(--line);
-  padding:6px 8px calc(6px + env(safe-area-inset-bottom));gap:8px;}
-nav button{flex:1;min-height:60px;border-radius:14px;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:2px;color:var(--ink-dim);font-size:.78rem;font-weight:700;}
-nav button.on{background:var(--panel2);color:var(--ink);}
-nav .ico{font-size:1.35rem;line-height:1;}
+/* ---- 入力フォーム（強度・切削・梁で共用） ---- */
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.f-row{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:7px 10px;}
+.f-row .lab{display:block;font-size:.71rem;color:var(--ink-dim);margin-bottom:1px;}
+.f-row .ipt{display:flex;align-items:baseline;gap:4px;}
+.f-row input{width:100%;min-width:0;background:none;border:none;color:var(--ink);
+  font-size:1.2rem;font-weight:800;padding:2px 0 0;}
+.f-row input:focus{outline:none;}
+.f-row .u{flex:0 0 auto;font-size:.72rem;color:var(--ink-dim);font-weight:700;}
+.f-full{grid-column:1/-1;}
+.seg.sm button{min-height:44px;font-size:.82rem;}
+.res{display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:8px 10px;}
+.res .k{font-size:.76rem;color:var(--ink-dim);}
+.res .v{font-size:1.1rem;font-weight:800;text-align:right;}
+.res .v .sub{display:block;font-size:.68rem;color:var(--ink-dim);font-weight:600;}
+.res.hl{border-color:var(--strength);background:rgba(125,211,252,.09);}
+.res.hl .v{color:var(--strength);font-size:1.3rem;}
+.judge{margin-top:10px;border-radius:13px;padding:11px 12px;font-weight:800;font-size:1rem;
+  border:1px solid;display:flex;align-items:center;gap:10px;}
+.judge.ok{color:var(--ok);border-color:var(--ok);background:rgba(52,211,153,.1);}
+.judge.ng{color:var(--ng);border-color:var(--ng);background:rgba(248,113,113,.1);}
+.judge .jl{flex:0 0 auto;white-space:nowrap;}
+.judge > span:last-child{min-width:0;}
+.judge .sm{font-size:.76rem;font-weight:600;color:var(--ink-dim);display:block;margin-top:2px;}
+.disc{color:var(--ng);font-size:.74rem;line-height:1.65;margin-top:10px;padding:9px 10px;
+  border:1px solid rgba(248,113,113,.35);border-radius:11px;background:rgba(248,113,113,.06);}
+.hint-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;
+  background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:6px 6px 6px 12px;font-size:.85rem;}
+.hint-row b{color:var(--cut);font-size:1rem;}
+.hint-row .chip{min-height:40px;flex:0 0 auto;}
+select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:12px;color:var(--ink);font:inherit;font-weight:700;padding:0 10px;-webkit-appearance:none;}
+
+/* ---- ドロワー ---- */
+#scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);
+  opacity:0;pointer-events:none;transition:opacity .2s;}
+#scrim.on{opacity:1;pointer-events:auto;}
+.drawer{position:fixed;top:0;bottom:0;z-index:50;width:min(86vw,340px);
+  background:var(--panel);display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top);will-change:transform;
+  transition:transform .24s cubic-bezier(.32,.72,0,1);}
+#drawerL{left:0;border-right:1px solid var(--line);border-radius:0 20px 20px 0;transform:translateX(-102%);}
+#drawerR{right:0;border-left:1px solid var(--line);border-radius:20px 0 0 20px;transform:translateX(102%);}
+/* ID指定の初期位置に勝たせるため、開いた状態もID付きで指定する */
+#drawerL.open,#drawerR.open{transform:none;box-shadow:0 0 40px rgba(0,0,0,.6);}
+.dw-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);}
+.dw-head .t{flex:1;font-size:.95rem;font-weight:800;}
+.dw-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:8px 8px calc(20px + env(safe-area-inset-bottom));}
+.dw-item{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:0 12px;
+  border-radius:13px;text-align:left;color:var(--ink-dim);}
+.dw-item .ico{flex:0 0 auto;width:30px;text-align:center;font-size:1.35rem;line-height:1;}
+.dw-item .tx{min-width:0;padding:8px 0;}
+.dw-item .nm{display:block;font-size:1rem;font-weight:700;line-height:1.3;}
+.dw-item .sb{display:block;font-size:.68rem;color:var(--ink-dim);line-height:1.45;margin-top:2px;}
+.dw-item.on{background:var(--panel2);color:var(--ink);}
+.dw-item.on .ico{color:var(--accent);}
+.dw-item:active{background:#242D38;}
+.dw-lab{font-size:.66rem;color:var(--ink-dim);letter-spacing:.1em;font-weight:700;padding:12px 12px 4px;}
+.dw-sep{height:1px;background:var(--line);margin:8px 10px;}
+.edge-hint{position:fixed;top:50%;margin-top:-27px;width:4px;height:54px;border-radius:3px;
+  background:var(--line);z-index:19;pointer-events:none;}
+.edge-hint.l{left:2px;} .edge-hint.r{right:2px;}
+
+/* ---- 右ドロワー（早見表・履歴） ---- */
+.ref-h{font-size:.78rem;font-weight:800;color:var(--accent);margin:14px 4px 6px;letter-spacing:.04em;}
+.ref-h:first-child{margin-top:4px;}
+.ref-t{width:100%;border-collapse:collapse;background:var(--panel2);
+  border:1px solid var(--line);border-radius:11px;overflow:hidden;font-size:.8rem;}
+.ref-t th,.ref-t td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);}
+.ref-t th{color:var(--ink-dim);font-size:.7rem;font-weight:700;background:rgba(255,255,255,.03);}
+.ref-t tr:last-child td{border-bottom:none;}
+.ref-t td:first-child{font-weight:700;white-space:nowrap;}
+.ref-note{color:var(--ink-dim);font-size:.68rem;line-height:1.6;margin:6px 4px 0;}
+.hist-item{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);
+  border-radius:12px;padding:9px 11px;margin-bottom:7px;}
+.hist-item:active{background:#242D38;}
+.hist-item .ht{font-size:.94rem;font-weight:800;}
+.hist-item .hd{font-size:.76rem;color:var(--ink-dim);margin-top:2px;line-height:1.5;}
+.hist-item .hm{font-size:.64rem;color:var(--ink-dim);margin-top:4px;}
+.empty{color:var(--ink-dim);font-size:.85rem;text-align:center;padding:36px 12px;line-height:1.8;}
 
 /* ---- 広告：下部バナー ---- */
-#adBanner{position:fixed;left:0;right:0;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom));z-index:29;
-  height:var(--banner-h);display:flex;align-items:stretch;background:#10151C;border-top:1px solid var(--line);}
+#adBanner{position:fixed;left:0;right:0;bottom:0;z-index:29;
+  height:calc(var(--banner-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
+  display:flex;align-items:stretch;background:#10151C;border-top:1px solid var(--line);}
 #adBanner a{flex:1;display:flex;align-items:center;gap:10px;padding:6px 10px;text-decoration:none;color:var(--ink);overflow:hidden;}
 #adBanner .ad-img{width:80px;height:52px;object-fit:cover;border-radius:8px;flex:0 0 auto;background:var(--panel2);}
 #adBanner .ad-txt{flex:1;min-width:0;}
@@ -200,10 +284,16 @@ nav .ico{font-size:1.35rem;line-height:1;}
 </div>
 
 <header>
-  <h1>Mech Gauge</h1>
-  <span class="sub">はめあい・ねじ・三角関数</span>
-  <span class="swipe-hint">← スワイプで切替 →</span>
+  <button class="hbtn" id="btnMenu" aria-label="機能メニュー">☰</button>
+  <div class="ttl">
+    <h1>Mech Gauge</h1>
+    <span class="sub" id="hdSub">はめあい公差</span>
+  </div>
+  <button class="hbtn" id="btnRef" aria-label="早見表・履歴">📖</button>
 </header>
+
+<div class="edge-hint l"></div>
+<div class="edge-hint r"></div>
 
 <!-- ================= はめあい ================= -->
 <main class="screen active" id="screen-fit">
@@ -271,6 +361,16 @@ nav .ico{font-size:1.35rem;line-height:1;}
     </div>
   </div>
 
+  <div class="card" id="screwChoiceCard">
+    <div class="picker-head">
+      <span style="font-size:.8rem;color:var(--ink-dim);font-weight:600;letter-spacing:.08em">収録サイズ</span>
+      <div class="range-toggle" id="screwChoice">
+        <button data-c="1" class="on">第1選択</button>
+        <button data-c="9">すべて</button>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="screw-layout">
       <div>
@@ -282,7 +382,21 @@ nav .ico{font-size:1.35rem;line-height:1;}
         <div class="spec-list" id="screwSpecs"></div>
       </div>
     </div>
+    <div id="screwWarn"></div>
     <p class="note" id="screwNote"></p>
+  </div>
+
+  <div class="card" id="screwTapCard">
+    <h2>タップ下穴（ひっかかり率で調整）</h2>
+    <div class="seg" id="screwEngage">
+      <button data-e="60">60%</button>
+      <button data-e="70">70%</button>
+      <button data-e="75" class="on">75%</button>
+      <button data-e="80">80%</button>
+      <button data-e="85">85%</button>
+    </div>
+    <div class="spec-list" id="screwDrill" style="margin-top:10px"></div>
+    <p class="note">下穴径 = 呼び径 − 1.299 × ピッチ × (ひっかかり率/100)。<b>75%が一般用途の標準</b>で、慣用の「呼び径−ピッチ」とほぼ同じ値になります。アルミ・鋳鉄など脆い材料や、タップ折れを避けたいときは60〜70%に下げます。ステンレスは食い付き負荷が高いため下げ目が無難です。<b>タップメーカーの推奨下穴表がある場合はそちらを優先してください。</b></p>
   </div>
 
 </main>
@@ -351,6 +465,371 @@ nav .ico{font-size:1.35rem;line-height:1;}
 
 </main>
 
+<!-- ================= ボルト・軸の強度 ================= -->
+<main class="screen" id="screen-strength">
+
+  <div class="card">
+    <div class="seg" id="stMode">
+      <button data-m="bolt" class="on">ボルト</button>
+      <button data-m="shaft">軸</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>荷重の種類（安全率）</h2>
+    <div class="seg sm" id="stLoad">
+      <button data-s="3" class="on">静荷重<br>S=3</button>
+      <button data-s="5">繰返し<br>S=5</button>
+      <button data-s="8">衝撃<br>S=8</button>
+    </div>
+    <div class="f-grid" style="margin-top:8px">
+      <div class="f-row f-full"><span class="lab">安全率を直接入力する場合</span>
+        <div class="ipt"><input id="stSf" class="num" type="text" inputmode="decimal" value="3"><span class="u">倍</span></div></div>
+    </div>
+  </div>
+
+  <!-- ---- ボルト ---- -->
+  <div id="boltPanel">
+    <div class="card">
+      <h2>ねじの呼び</h2>
+      <div class="hchips" id="boltSizes"></div>
+      <h2 style="margin-top:12px">強度区分</h2>
+      <div class="hchips" id="boltGrades"></div>
+    </div>
+
+    <div class="card">
+      <h2>締付条件</h2>
+      <div class="seg sm" id="boltK">
+        <button data-k="0.15">油潤滑<br>K=0.15</button>
+        <button data-k="0.17" class="on">無処理<br>K=0.17</button>
+        <button data-k="0.2">乾燥<br>K=0.20</button>
+        <button data-k="0.25">亜鉛めっき<br>K=0.25</button>
+      </div>
+      <div class="f-grid" style="margin-top:8px">
+        <div class="f-row"><span class="lab">締付軸力（耐力の何%）</span>
+          <div class="ipt"><input id="boltPre" class="num" type="text" inputmode="decimal" value="70"><span class="u">%</span></div></div>
+        <div class="f-row"><span class="lab">せん断面の位置</span>
+          <div class="ipt" style="padding-top:4px">
+            <div class="seg sm" style="width:100%" id="boltShear">
+              <button data-p="thread" class="on">ねじ部</button>
+              <button data-p="body">円筒部</button>
+            </div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>計算結果</h2>
+      <div class="spec-list" id="boltOut"></div>
+      <div id="boltWarn"></div>
+      <p class="note" id="boltNote"></p>
+      <div class="disc">参考値です。実設計は必ず規格原典で検証し、有資格者の確認を受けてください。本アプリの計算結果に起因する損害について責任を負いません。</div>
+    </div>
+  </div>
+
+  <!-- ---- 軸 ---- -->
+  <div id="shaftPanel" style="display:none">
+    <div class="card">
+      <h2>軸の形状</h2>
+      <div class="seg sm" id="shaftShape">
+        <button data-s="solid" class="on">中実丸軸</button>
+        <button data-s="hollow">中空丸軸</button>
+      </div>
+      <div class="f-grid" style="margin-top:8px">
+        <div class="f-row"><span class="lab">外径 d</span>
+          <div class="ipt"><input id="shD" class="num" type="text" inputmode="decimal" value="30"><span class="u">mm</span></div></div>
+        <div class="f-row" id="shDiRow" style="display:none"><span class="lab">内径 di</span>
+          <div class="ipt"><input id="shDi" class="num" type="text" inputmode="decimal" value="20"><span class="u">mm</span></div></div>
+      </div>
+      <div class="seg sm" id="shaftKey" style="margin-top:8px">
+        <button data-k="0" class="on">キー溝なし</button>
+        <button data-k="1">キー溝あり（断面 ×0.75）</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>材料</h2>
+      <div class="hchips" id="shaftMats"></div>
+    </div>
+
+    <div class="card">
+      <h2>負荷</h2>
+      <div class="seg sm" id="shaftTin">
+        <button data-t="power" class="on">動力と回転数から</button>
+        <button data-t="torque">トルクを直接</button>
+      </div>
+      <div class="f-grid" style="margin-top:8px">
+        <div class="f-row" id="shPwRow"><span class="lab">伝達動力 P</span>
+          <div class="ipt"><input id="shPw" class="num" type="text" inputmode="decimal" value="5.5"><span class="u">kW</span></div></div>
+        <div class="f-row" id="shRpmRow"><span class="lab">回転数 N</span>
+          <div class="ipt"><input id="shRpm" class="num" type="text" inputmode="decimal" value="1450"><span class="u">min⁻¹</span></div></div>
+        <div class="f-row f-full" id="shTqRow" style="display:none"><span class="lab">ねじりモーメント T</span>
+          <div class="ipt"><input id="shTq" class="num" type="text" inputmode="decimal" value="100"><span class="u">N·m</span></div></div>
+        <div class="f-row f-full"><span class="lab">曲げモーメント M（かからない場合は0）</span>
+          <div class="ipt"><input id="shM" class="num" type="text" inputmode="decimal" value="0"><span class="u">N·m</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>計算結果</h2>
+      <div class="spec-list" id="shaftOut"></div>
+      <div id="shaftWarn"></div>
+      <p class="note" id="shaftNote"></p>
+      <div class="disc">参考値です。実設計は必ず規格原典で検証し、有資格者の確認を受けてください。本アプリの計算結果に起因する損害について責任を負いません。</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ================= 切削条件 ================= -->
+<main class="screen" id="screen-cut">
+
+  <div class="card">
+    <div class="seg" id="cutMode">
+      <button data-m="mill" class="on">フライス</button>
+      <button data-m="drill">ドリル</button>
+      <button data-m="turn">旋盤</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>被削材（ISO分類）と工具材種</h2>
+    <div class="hchips" id="cutMats"></div>
+    <div class="seg sm" id="cutTool" style="margin-top:8px">
+      <button data-t="hss">ハイス</button>
+      <button data-t="ca">超硬</button>
+      <button data-t="co" class="on">コーティング<br>超硬</button>
+    </div>
+    <div class="hint-row"><span>目安 Vc: <b id="sugVcT" class="num">—</b></span><button class="chip" id="sugVcBtn">セット</button></div>
+    <div class="hint-row"><span id="sugFzL">目安 fz: <b id="sugFzT" class="num">—</b></span><button class="chip" id="sugFzBtn">セット</button></div>
+    <p class="note">目安は公開文献・教科書レベルの幅の広いレンジです。<b>実際の加工は必ず工具メーカーのカタログ推奨値を優先</b>し、機械剛性・突き出し・クーラントに応じて調整してください。</p>
+  </div>
+
+  <div class="card" id="cutMillP">
+    <h2>フライス条件</h2>
+    <div class="f-grid">
+      <div class="f-row"><span class="lab">工具径 D</span>
+        <div class="ipt"><input id="cmD" class="num" type="text" inputmode="decimal" value="10"><span class="u">mm</span></div></div>
+      <div class="f-row"><span class="lab">刃数 z</span>
+        <div class="ipt"><input id="cmZ" class="num" type="text" inputmode="decimal" value="4"><span class="u">枚</span></div></div>
+      <div class="f-row"><span class="lab">切削速度 Vc</span>
+        <div class="ipt"><input id="cmVc" class="num" type="text" inputmode="decimal" value="150"><span class="u">m/min</span></div></div>
+      <div class="f-row"><span class="lab">1刃送り fz</span>
+        <div class="ipt"><input id="cmFz" class="num" type="text" inputmode="decimal" value="0.06"><span class="u">mm/刃</span></div></div>
+      <div class="f-row"><span class="lab">軸方向切込み ap</span>
+        <div class="ipt"><input id="cmAp" class="num" type="text" inputmode="decimal" value="5"><span class="u">mm</span></div></div>
+      <div class="f-row"><span class="lab">径方向切込み ae</span>
+        <div class="ipt"><input id="cmAe" class="num" type="text" inputmode="decimal" value="5"><span class="u">mm</span></div></div>
+      <div class="f-row f-full"><span class="lab">加工長 L（時間計算用・0で省略）</span>
+        <div class="ipt"><input id="cmL" class="num" type="text" inputmode="decimal" value="100"><span class="u">mm</span></div></div>
+    </div>
+  </div>
+
+  <div class="card" id="cutDrillP" style="display:none">
+    <h2>ドリル条件</h2>
+    <div class="f-grid">
+      <div class="f-row"><span class="lab">ドリル径 D</span>
+        <div class="ipt"><input id="cdD" class="num" type="text" inputmode="decimal" value="8.5"><span class="u">mm</span></div></div>
+      <div class="f-row"><span class="lab">切削速度 Vc</span>
+        <div class="ipt"><input id="cdVc" class="num" type="text" inputmode="decimal" value="70"><span class="u">m/min</span></div></div>
+      <div class="f-row"><span class="lab">送り f</span>
+        <div class="ipt"><input id="cdF" class="num" type="text" inputmode="decimal" value="0.2"><span class="u">mm/rev</span></div></div>
+      <div class="f-row"><span class="lab">穴深さ</span>
+        <div class="ipt"><input id="cdDep" class="num" type="text" inputmode="decimal" value="25"><span class="u">mm</span></div></div>
+    </div>
+    <div class="seg sm" id="cdAngle" style="margin-top:8px">
+      <button data-a="118" class="on">先端118°</button>
+      <button data-a="135">135°</button>
+      <button data-a="140">140°</button>
+    </div>
+  </div>
+
+  <div class="card" id="cutTurnP" style="display:none">
+    <h2>旋盤条件</h2>
+    <div class="f-grid">
+      <div class="f-row"><span class="lab">加工径 D</span>
+        <div class="ipt"><input id="ctD" class="num" type="text" inputmode="decimal" value="50"><span class="u">mm</span></div></div>
+      <div class="f-row"><span class="lab">切削速度 Vc</span>
+        <div class="ipt"><input id="ctVc" class="num" type="text" inputmode="decimal" value="180"><span class="u">m/min</span></div></div>
+      <div class="f-row"><span class="lab">送り f</span>
+        <div class="ipt"><input id="ctF" class="num" type="text" inputmode="decimal" value="0.2"><span class="u">mm/rev</span></div></div>
+      <div class="f-row"><span class="lab">切込み ap</span>
+        <div class="ipt"><input id="ctAp" class="num" type="text" inputmode="decimal" value="2"><span class="u">mm</span></div></div>
+      <div class="f-row"><span class="lab">加工長 L</span>
+        <div class="ipt"><input id="ctL" class="num" type="text" inputmode="decimal" value="50"><span class="u">mm</span></div></div>
+    </div>
+    <div class="seg sm" id="ctR" style="margin-top:8px">
+      <button data-r="0.2">R0.2</button>
+      <button data-r="0.4">R0.4</button>
+      <button data-r="0.8" class="on">R0.8</button>
+      <button data-r="1.2">R1.2</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>計算結果</h2>
+    <div class="spec-list" id="cutOut"></div>
+    <div id="cutWarn"></div>
+    <p class="note" id="cutNote"></p>
+  </div>
+
+</main>
+
+<!-- ================= 梁のたわみ ================= -->
+<main class="screen" id="screen-beam">
+
+  <div class="card">
+    <h2>断面の指定方法</h2>
+    <div class="seg" id="beamSrc">
+      <button data-s="dims" class="on">寸法を入力</button>
+      <button data-s="steel">型鋼から選ぶ</button>
+    </div>
+  </div>
+
+  <div class="card" id="beamDimsP">
+    <div class="seg sm" id="beamShape">
+      <button data-s="round" class="on">丸棒</button>
+      <button data-s="pipe">丸パイプ</button>
+      <button data-s="rect">矩形</button>
+      <button data-s="box">角パイプ</button>
+    </div>
+    <div class="f-grid" id="bmG_round" style="margin-top:8px">
+      <div class="f-row f-full"><span class="lab">直径 d</span>
+        <div class="ipt"><input id="bmRd" class="num" type="text" inputmode="decimal" value="30"><span class="u">mm</span></div></div>
+    </div>
+    <div class="f-grid" id="bmG_pipe" style="margin-top:8px;display:none">
+      <div class="f-row"><span class="lab">外径 D</span>
+        <div class="ipt"><input id="bmPd" class="num" type="text" inputmode="decimal" value="48.6"><span class="u">mm</span></div></div>
+      <div class="f-row"><span class="lab">肉厚 t</span>
+        <div class="ipt"><input id="bmPt" class="num" type="text" inputmode="decimal" value="2.8"><span class="u">mm</span></div></div>
+    </div>
+    <div class="f-grid" id="bmG_rect" style="margin-top:8px;display:none">
+      <div class="f-row"><span class="lab">幅 b</span>
+        <div class="ipt"><input id="bmRb" class="num" type="text" inputmode="decimal" value="30"><span class="u">mm</span></div></div>
+      <div class="f-row"><span class="lab">高さ h（荷重方向）</span>
+        <div class="ipt"><input id="bmRh" class="num" type="text" inputmode="decimal" value="40"><span class="u">mm</span></div></div>
+    </div>
+    <div class="f-grid" id="bmG_box" style="margin-top:8px;display:none">
+      <div class="f-row"><span class="lab">幅 B</span>
+        <div class="ipt"><input id="bmBb" class="num" type="text" inputmode="decimal" value="50"><span class="u">mm</span></div></div>
+      <div class="f-row"><span class="lab">高さ H</span>
+        <div class="ipt"><input id="bmBh" class="num" type="text" inputmode="decimal" value="50"><span class="u">mm</span></div></div>
+      <div class="f-row f-full"><span class="lab">肉厚 t</span>
+        <div class="ipt"><input id="bmBt" class="num" type="text" inputmode="decimal" value="3.2"><span class="u">mm</span></div></div>
+    </div>
+  </div>
+
+  <div class="card" id="beamSteelP" style="display:none">
+    <h2>型鋼の種類とサイズ</h2>
+    <div class="hchips" id="beamFam"></div>
+    <select class="sel num" id="beamSize" style="margin-top:8px"></select>
+    <div class="seg sm" id="beamAxis" style="margin-top:8px">
+      <button data-a="x" class="on">強軸（通常）</button>
+      <button data-a="y">弱軸</button>
+    </div>
+    <div class="spec-list" id="beamSecInfo" style="margin-top:8px"></div>
+    <p class="note">断面性能は公称寸法（JIS G 3192 / G 3466 / G 3444 の呼称）から計算した<b>参考値</b>です。隅Rを無視しているため、H形鋼・溝形鋼は規格表よりわずかに小さめ（安全側）、山形鋼・鋼管は数%の差が出ます。判定が際どい場合は規格表の値で再確認してください。</p>
+  </div>
+
+  <div class="card">
+    <h2>材料と安全率</h2>
+    <div class="hchips" id="beamMats"></div>
+    <div class="seg sm" id="beamSfSeg" style="margin-top:8px">
+      <button data-s="3" class="on">静荷重 S=3</button>
+      <button data-s="5">繰返し S=5</button>
+      <button data-s="8">衝撃 S=8</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>支持条件と荷重</h2>
+    <div class="hchips" id="beamCases"></div>
+    <div class="f-grid" style="margin-top:8px">
+      <div class="f-row"><span class="lab">スパン L</span>
+        <div class="ipt"><input id="bmL" class="num" type="text" inputmode="decimal" value="1000"><span class="u">mm</span></div></div>
+      <div class="f-row" id="bmPRow"><span class="lab">集中荷重 P</span>
+        <div class="ipt"><input id="bmP" class="num" type="text" inputmode="decimal" value="1000"><span class="u">N</span></div></div>
+      <div class="f-row" id="bmWRow" style="display:none"><span class="lab">等分布荷重 w</span>
+        <div class="ipt"><input id="bmW" class="num" type="text" inputmode="decimal" value="500"><span class="u">N/m</span></div></div>
+      <div class="f-row" id="bmM0Row" style="display:none"><span class="lab">モーメント M</span>
+        <div class="ipt"><input id="bmM0" class="num" type="text" inputmode="decimal" value="100"><span class="u">N·m</span></div></div>
+      <div class="f-row" id="bmARow" style="display:none"><span class="lab">荷重位置 a（左端から）</span>
+        <div class="ipt"><input id="bmA" class="num" type="text" inputmode="decimal" value="300"><span class="u">mm</span></div></div>
+    </div>
+    <h2 style="margin-top:12px">たわみの許容基準</h2>
+    <div class="seg sm" id="beamDefl">
+      <button data-d="300" class="on">L/300<br>一般</button>
+      <button data-d="500">L/500<br>精密架台</button>
+      <button data-d="1000">L/1000<br>工作機械</button>
+      <button data-d="0">指定なし</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>計算結果</h2>
+    <div class="spec-list" id="beamOut"></div>
+    <div id="beamWarn"></div>
+    <p class="note" id="beamNote"></p>
+    <div class="disc">参考値です。建築物・吊り具など人身に関わる構造は建築基準法・クレーン等安全規則に基づく設計と有資格者の確認が必要です。本アプリの計算結果に起因する損害について責任を負いません。</div>
+  </div>
+
+</main>
+
+<!-- ================= 使い方・単位 ================= -->
+<main class="screen" id="screen-about">
+  <div class="card">
+    <h2>このアプリについて</h2>
+    <p class="formula">機械加工・検査の現場で使う計算をまとめた道具箱です。<b>すべての計算は端末内で完結</b>し、入力した数値が外部に送信されることはありません。オフラインでも動作します。</p>
+  </div>
+  <div class="card">
+    <h2>画面の切り替え</h2>
+    <div class="spec-list">
+      <div class="spec"><span class="k">左上 ☰</span><span class="v" style="font-size:.92rem">機能の一覧を開く</span></div>
+      <div class="spec"><span class="k">右上 📖</span><span class="v" style="font-size:.92rem">早見表・計算履歴を開く</span></div>
+      <div class="spec"><span class="k">画面の左端から右へスワイプ</span><span class="v" style="font-size:.92rem">機能の一覧</span></div>
+      <div class="spec"><span class="k">画面の右端から左へスワイプ</span><span class="v" style="font-size:.92rem">早見表・履歴</span></div>
+    </div>
+    <p class="note">※ ブラウザ版ではスワイプが「戻る／進む」に取られる場合があります。そのときは ☰ / 📖 ボタンをお使いください。</p>
+  </div>
+  <div class="card">
+    <h2>単位について</h2>
+    <div class="spec-list">
+      <div class="spec"><span class="k">長さ</span><span class="v num">mm</span></div>
+      <div class="spec"><span class="k">はめあいの寸法差</span><span class="v num">μm（1/1000 mm）</span></div>
+      <div class="spec"><span class="k">角度</span><span class="v num">°（度）</span></div>
+      <div class="spec"><span class="k">切削速度</span><span class="v num">m/min</span></div>
+      <div class="spec"><span class="k">回転数</span><span class="v num">min⁻¹（rpm）</span></div>
+    </div>
+    <p class="note">内部の計算はすべてSI単位（N・mm・MPa・N·m）で行い、必要に応じて kgf・kgf·m を併記します。1 kgf = 9.80665 N。</p>
+  </div>
+</main>
+
+<!-- ================= 免責・出典 ================= -->
+<main class="screen" id="screen-legal">
+  <div class="card">
+    <h2>免責事項</h2>
+    <div class="warn" style="font-size:.92rem;line-height:1.7">
+      本アプリが表示する数値は<b>すべて参考値</b>です。実際の設計・加工・検査にあたっては、必ず規格の原典および工具・材料メーカーの資料で確認し、必要に応じて有資格者の確認を受けてください。<br><br>
+      本アプリの計算結果に起因する損害について、作者は一切の責任を負いません。
+    </div>
+  </div>
+  <div class="card">
+    <h2>準拠・参照した規格</h2>
+    <div class="spec-list">
+      <div class="spec"><span class="k">はめあい公差</span><span class="v" style="font-size:.9rem">JIS B 0401 / ISO 286-1</span></div>
+      <div class="spec"><span class="k">メートルねじ</span><span class="v" style="font-size:.9rem">JIS B 0205 / B 0207</span></div>
+      <div class="spec"><span class="k">ミニチュアねじ</span><span class="v" style="font-size:.9rem">JIS B 0201</span></div>
+      <div class="spec"><span class="k">ウイットねじ</span><span class="v" style="font-size:.9rem">JIS B 0206</span></div>
+      <div class="spec"><span class="k">管用ねじ</span><span class="v" style="font-size:.9rem">JIS B 0202 / B 0203</span></div>
+      <div class="spec"><span class="k">六角ボルト二面幅</span><span class="v" style="font-size:.9rem">JIS B 1002 / B 1180</span></div>
+    </div>
+    <p class="note">規格番号は計算の根拠を示すものであり、本アプリが各規格の認証を受けていることを意味するものではありません。数表そのものの転載は行っていません。</p>
+  </div>
+  <div class="card">
+    <h2>広告について</h2>
+    <p class="note">起動時および画面下部に表示される広告は、掲載許諾をいただいた協賛企業のものです。アプリが利用者の情報を収集して広告を出し分けることはありません。</p>
+  </div>
+</main>
+
 <!-- ============ 下部バナー広告 ============ -->
 <div id="adBanner" style="display:none">
   <a id="bannerLink" target="_blank" rel="noopener">
@@ -363,11 +842,30 @@ nav .ico{font-size:1.35rem;line-height:1;}
   <span class="ad-mark">広告</span>
 </div>
 
-<nav>
-  <button id="tab-fit" class="on"><span class="ico">⌀</span>はめあい</button>
-  <button id="tab-screw"><span class="ico">⌇</span>ねじ</button>
-  <button id="tab-trig"><span class="ico">△</span>三角関数</button>
-</nav>
+<!-- ============ ドロワー ============ -->
+<div id="scrim"></div>
+
+<aside class="drawer" id="drawerL">
+  <div class="dw-head">
+    <span class="t">機能を選ぶ</span>
+    <button class="hbtn" data-close="l" aria-label="閉じる">✕</button>
+  </div>
+  <div class="dw-body" id="menuBody"></div>
+</aside>
+
+<aside class="drawer" id="drawerR">
+  <div class="dw-head">
+    <span class="t" id="refTitle">早見表</span>
+    <button class="hbtn" data-close="r" aria-label="閉じる">✕</button>
+  </div>
+  <div style="padding:8px 8px 0">
+    <div class="seg" id="refSeg">
+      <button data-r="ref" class="on">早見表</button>
+      <button data-r="hist">履歴</button>
+    </div>
+  </div>
+  <div class="dw-body" id="refBody"></div>
+</aside>
 
 <script>
 "use strict";
@@ -514,6 +1012,8 @@ const FIT_PRESETS=[
  ["H8","f7","一般回転"],["H8","e8","ゆるい回転"],["H9","d9","大すきま"]
 ];
 const $=q=>document.querySelector(q);
+// 履歴からの復元関数を各計算機が登録する先（定義は各計算機の直後、実体はナビゲーション節）
+const RESTORE={};
 const fmt=(um,dec)=>{const d=(dec!=null)?dec:(Number.isInteger(um)?0:1);return(um>0?"+":"")+um.toFixed(d);};
 const mm=(base,um)=>(base+um/1000).toFixed(3);
 function parseNum(v){
@@ -630,7 +1130,20 @@ function render(){
    '<div class="dev num">es '+fmt(s.es)+' / ei '+fmt(s.ei)+' μm</div>'+
    '<div class="dim num">'+mm(D,s.ei)+'<br>〜 '+mm(D,s.es)+'</div></div>';
   drawZones(h,s);drawVerdict(h,s);
+  const maxC=h.ES-s.ei,minC=h.EI-s.es;
+  const kind=minC>=0?"すきまばめ":(maxC<=0?"しまりばめ":"中間ばめ");
+  pushHistory({s:"fit",
+    t:"φ"+D+" "+state.hole.letter+state.hole.grade+" / "+state.shaft.letter.toLowerCase()+state.shaft.grade,
+    d:kind+"　最大"+maxC.toFixed(1)+" / 最小"+minC.toFixed(1)+" μm",
+    st:{n:D,hl:state.hole.letter,hg:state.hole.grade,sl:state.shaft.letter,sg:state.shaft.grade}});
 }
+RESTORE.fit=st=>{
+  if(!st)return;
+  state.hole={letter:st.hl,grade:st.hg};
+  state.shaft={letter:st.sl,grade:st.sg};
+  state.nominal=st.n;$("#nominal").value=st.n;
+  buildFitWheels();render();
+};
 function drawZones(h,s){
   const svg=$("#zoneSvg"),W=360,H=180,zeroY=H/2,plotL=64,plotR=332;
   const maxAbs=Math.max(Math.abs(h.ES),Math.abs(h.EI),Math.abs(s.es),Math.abs(s.ei),1);
@@ -673,13 +1186,23 @@ function drawVerdict(h,s){
 // 60°メートル: d2=d−0.6495P, d1=d−1.0825P, 下穴≈d−P
 // 55°(W/G/R): d2=d−0.6403P, d1=d−1.2806P, 平行の下穴≈d−P
 const SCREW_DATA={
- mc:{name:"メートル並目（JIS B 0205）",angle:60,list:[
-   ["M2",2,0.4],["M2.5",2.5,0.45],["M3",3,0.5],["M4",4,0.7],["M5",5,0.8],["M6",6,1],
-   ["M8",8,1.25],["M10",10,1.5],["M12",12,1.75],["M14",14,2],["M16",16,2],["M18",18,2.5],
-   ["M20",20,2.5],["M22",22,2.5],["M24",24,3],["M27",27,3],["M30",30,3.5],["M33",33,3.5],
-   ["M36",36,4],["M39",39,4],["M42",42,4.5],["M45",45,4.5],["M48",48,5]],
-   hex:{M3:5.5,M4:7,M5:8,M6:10,M8:13,M10:16,M12:18,M14:21,M16:24,M18:27,M20:30,M22:32,M24:36,M27:41,M30:46,M33:50,M36:55},
-   note:"下穴 ≈ 呼び径 − ピッチ（ひっかかり率約75%の目安）。二面幅はJIS B 1002小形系列等で異なる場合あり（M10=17、M12=19等の旧規格・メーカー品に注意）。"},
+ // 第4要素 = JIS B 0205-4 / ISO 261 の選択度（1=第1選択, 2=第2選択, 3=第3選択, 0=規格範囲外）
+ mc:{name:"メートル並目（JIS B 0205）",angle:60,choice:true,list:[
+   ["M0.8",0.8,0.2,0],
+   ["M1",1,0.25,1],["M1.1",1.1,0.25,2],["M1.2",1.2,0.25,1],["M1.4",1.4,0.3,2],
+   ["M1.6",1.6,0.35,1],["M1.8",1.8,0.35,2],["M2",2,0.4,1],["M2.2",2.2,0.45,2],
+   ["M2.5",2.5,0.45,1],["M3",3,0.5,1],["M3.5",3.5,0.6,2],["M4",4,0.7,1],["M4.5",4.5,0.75,2],
+   ["M5",5,0.8,1],["M5.5",5.5,0.9,3],["M6",6,1,1],["M7",7,1,2],["M8",8,1.25,1],["M9",9,1.25,3],
+   ["M10",10,1.5,1],["M11",11,1.5,3],["M12",12,1.75,1],["M14",14,2,2],["M16",16,2,1],
+   ["M18",18,2.5,2],["M20",20,2.5,1],["M22",22,2.5,2],["M24",24,3,1],["M27",27,3,2],
+   ["M30",30,3.5,1],["M33",33,3.5,2],["M36",36,4,1],["M39",39,4,2],
+   ["M42",42,4.5,1],["M45",45,4.5,2],["M48",48,5,1]],
+   hex:{"M1.6":3.2,M2:4,"M2.5":5,M3:5.5,"M3.5":6,M4:7,M5:8,M6:10,M7:11,M8:13,M10:16,M12:18,
+        M14:21,M16:24,M18:27,M20:30,M22:32,M24:36,M27:41,M30:46,M33:50,M36:55,M39:60,M42:65,M45:70,M48:75},
+   // 六角穴付きボルト（JIS B 1176）の六角穴 対辺距離＝使用する六角レンチのサイズ
+   hexKey:{"M1.6":1.5,M2:1.5,"M2.5":2,M3:2.5,M4:3,M5:4,M6:5,M8:6,M10:8,M12:10,M14:12,M16:14,
+        M18:14,M20:17,M22:17,M24:19,M27:19,M30:22,M33:24,M36:27,M42:32,M48:36},
+   note:"二面幅はJIS B 1002小形系列等で異なる場合あり（M10=17、M12=19等の旧規格・メーカー品に注意）。"},
  mf:{name:"メートル細目（JIS B 0207）",angle:60,list:[
    ["M8×1",8,1],["M10×1.25",10,1.25],["M10×1",10,1],["M12×1.5",12,1.5],["M12×1.25",12,1.25],
    ["M14×1.5",14,1.5],["M16×1.5",16,1.5],["M18×1.5",18,1.5],["M20×1.5",20,1.5],["M20×2",20,2],
@@ -698,17 +1221,40 @@ const SCREW_DATA={
    ["R3/4",26.441,14,24.0],["R1",33.249,11,30.2],["R1 1/4",41.910,11,38.8],["R1 1/2",47.803,11,44.7],["R2",59.614,11,56.5]],
    tpi:true,note:"テーパ1/16。基準径は基準の長さ位置での値。Rc下穴はストレート穴の一般的な参考値で、食付き・ねじ込み深さにより変わるためタップメーカー推奨値を優先してください。"}
 };
-let screwState={series:"mc",idx:5}; // 初期 M6
+/* 下穴径 = 呼び径 − 1.299 × ピッチ × (ひっかかり率/100)
+   係数1.299でひっかかり率75%とすると、慣用の「呼び径−ピッチ」およびJIS標準の
+   下穴表（M8→6.8、M10→8.5、M5→4.2 …）と一致する。 */
+function drillFromEngage(d,P,e){return d-1.299*P*e/100;}
+// 実在するドリル径へ丸める（3mm未満は0.05刻み、以上は0.1刻み）
+function nearestDrill(v){const step=v<3?0.05:0.1;return (Math.round(v/step)*step).toFixed(2);}
+
+let screwState={series:"mc",name:"M6",choice:1,engage:75};
+function screwList(){
+  const S=SCREW_DATA[screwState.series];
+  if(!S.choice||screwState.choice>=9)return S.list;
+  return S.list.filter(r=>r[3]===1||r[3]===0); // 第1選択＋規格範囲外(M0.8)
+}
+function screwRow(){
+  const list=screwList();
+  return list.find(r=>r[0]===screwState.name)||list[0];
+}
 function buildScrewWheel(){
   const S=SCREW_DATA[screwState.series];
-  if(screwState.idx>=S.list.length)screwState.idx=0;
-  makeWheel($("#wScrew"),S.list.map((row,i)=>({label:row[0],value:i})),screwState.idx,
-    v=>{screwState.idx=v;renderScrew();});
+  const list=screwList();
+  if(!list.some(r=>r[0]===screwState.name)){
+    // 収録範囲の切替で選択が消えたときは、呼び径が最も近いものへ寄せる
+    const cur=S.list.find(r=>r[0]===screwState.name);
+    const d=cur?cur[1]:6;
+    screwState.name=list.reduce((a,b)=>Math.abs(b[1]-d)<Math.abs(a[1]-d)?b:a)[0];
+  }
+  $("#screwChoiceCard").style.display=S.choice?"":"none";
+  makeWheel($("#wScrew"),list.map(r=>({label:r[0],value:r[0]})),screwState.name,
+    v=>{screwState.name=v;renderScrew();});
   renderScrew();
 }
 function renderScrew(){
   const S=SCREW_DATA[screwState.series];
-  const row=S.list[screwState.idx];
+  const row=screwRow();
   const name=row[0],d=row[1];
   let P,tpiTxt="";
   if(S.tpi){const n=row[2];P=25.4/n;tpiTxt=n+" 山/25.4mm";}
@@ -716,26 +1262,90 @@ function renderScrew(){
   const is60=S.angle===60;
   const d2=d-(is60?0.649519:0.640327)*P;
   const d1=d-(is60?1.082532:1.280654)*P;
-  const drill=S.taper?row[3]:(d-P);
+  // テーパねじは row[3] が規定下穴、メートル並目は row[3] が選択度なので取り違えない
+  const fixedDrill=S.taper?row[3]:null;
+  const drill=fixedDrill!=null?fixedDrill:drillFromEngage(d,P,screwState.engage);
   const r3=v=>v.toFixed(3);
-  let html="";
   const spec=(k,v,hl)=>'<div class="spec'+(hl?" hl":"")+'"><span class="k">'+k+'</span><span class="v num">'+v+"</span></div>";
+  let html="";
   html+=spec("外径（基準）",r3(d)+" mm");
   html+=spec(S.tpi?"山数":"ピッチ",S.tpi?tpiTxt:P+" mm");
   if(S.tpi)html+=spec("ピッチ換算",r3(P)+" mm");
   html+=spec("有効径 d2",r3(d2)+" mm");
   html+=spec("谷径 d1",r3(d1)+" mm");
-  html+=spec("タップ下穴（参考）",(S.taper?drill.toFixed(1):drill.toFixed(2))+" mm",true);
-  if(S.hex&&S.hex[name])html+=spec("六角二面幅（参考）",S.hex[name]+" mm");
+  html+=spec("タップ下穴",(fixedDrill!=null?drill.toFixed(1):nearestDrill(drill))+" mm",true);
+  if(S.hex&&S.hex[name])html+=spec("六角二面幅",S.hex[name]+" mm");
+  if(S.hexKey&&S.hexKey[name])html+=spec("六角穴レンチ",S.hexKey[name]+" mm");
   html+=spec("ねじ山角度",S.angle+"°");
   $("#screwName").textContent=name;
   $("#screwSpecs").innerHTML=html;
+
+  // 規格範囲外サイズの注記
+  const warn=$("#screwWarn");
+  if(row[3]===0){
+    warn.innerHTML='<div class="warn">⚠ <b>M0.8はJIS B 0205（メートルねじ 一般用）の規格範囲外</b>です（規格の最小はM1）。'+
+      '呼び径0.8mmのねじは<b>JIS B 0201「ミニチュアねじ」のS0.8（ピッチ0.2）</b>に該当し、'+
+      '時計・眼鏡・精密機器用として規定されています。ここでの諸元はS0.8として計算しています。</div>';
+  }else if(row[3]===2||row[3]===3){
+    warn.innerHTML='<div class="warn">ℹ このサイズはJIS B 0205の<b>第'+row[3]+'選択</b>です。'+
+      '入手性が第1選択より劣るため、新規設計ではなるべく第1選択（M3・M4・M5・M6・M8・M10・M12…）を使ってください。</div>';
+  }else warn.innerHTML="";
+
+  // タップ下穴カード
+  const tap=$("#screwTapCard");
+  if(fixedDrill!=null){
+    // テーパねじは規定値をそのまま出す（ひっかかり率の概念を当てはめない）
+    $("#screwEngage").style.display="none";
+    $("#screwDrill").innerHTML=spec("規定の下穴（Rc用・参考）",drill.toFixed(1)+" mm",true);
+  }else{
+    $("#screwEngage").style.display="";
+    // 下穴が規格の谷径D1を下回ると、ねじ山が規格より深くなりタップ負荷が跳ね上がる
+    const tooDeep=drill<d1;
+    $("#screwDrill").innerHTML=
+      spec("下穴径（計算値）",drill.toFixed(3)+" mm")+
+      spec("推奨ドリル径",nearestDrill(drill)+" mm",true)+
+      spec("慣用値（呼び径−ピッチ）",(d-P).toFixed(2)+" mm")+
+      spec("めねじ谷径 D1（規格）",r3(d1)+" mm")+
+      (tooDeep?'<div class="warn">⚠ この下穴（'+nearestDrill(drill)+" mm）は<b>規格の谷径 D1 = "+
+        r3(d1)+" mm を下回ります</b>。ねじ山が規格より深くなり、強度はほとんど増えないままタップの負荷・折損リスクだけが大きく増えます。ひっかかり率を下げてください。</div>":"");
+  }
+  tap.style.display="";
+
   $("#screwNote").innerHTML="※ "+S.name+"。"+S.note+" いずれも<b>参考値</b>です。";
+  pushHistory({s:"screw",t:name,
+    d:S.name+"　下穴 "+(fixedDrill!=null?drill.toFixed(1):nearestDrill(drill))+" mm"+
+      (fixedDrill!=null?"":"（ひっかかり率"+screwState.engage+"%）")+" ／ 有効径 "+r3(d2)+" mm",
+    st:{series:screwState.series,name:name,choice:screwState.choice,engage:screwState.engage}});
 }
+RESTORE.screw=st=>{
+  if(!st||!SCREW_DATA[st.series])return;
+  screwState.series=st.series;
+  screwState.name=st.name;
+  if(st.choice)screwState.choice=st.choice;
+  if(st.engage)screwState.engage=st.engage;
+  document.querySelectorAll("#screwSeries button").forEach(x=>x.classList.toggle("on",x.dataset.s===st.series));
+  $("#screwChoice").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.c===screwState.choice));
+  $("#screwEngage").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.e===screwState.engage));
+  buildScrewWheel();
+};
 document.querySelectorAll("#screwSeries button").forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll("#screwSeries button").forEach(x=>x.classList.toggle("on",x===b));
-    screwState.series=b.dataset.s;screwState.idx=0;buildScrewWheel();
+    screwState.series=b.dataset.s;
+    screwState.name=SCREW_DATA[b.dataset.s].list[0][0];
+    buildScrewWheel();
+  };
+});
+$("#screwChoice").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#screwChoice").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    screwState.choice=+b.dataset.c;buildScrewWheel();
+  };
+});
+$("#screwEngage").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#screwEngage").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    screwState.engage=+b.dataset.e;renderScrew();
   };
 });
 
@@ -816,7 +1426,24 @@ function solveTri(){
   if(R.theta!=null)formula+="<br>もう一方の角 = <b>"+rnd(90-R.theta)+"°</b>";
   $("#triFormula").innerHTML=formula;
   drawTri((R.adj&&R.opp)?R:null);
+  if(R.theta!=null&&R.adj!=null&&R.opp!=null){
+    pushHistory({s:"trig",t:"θ "+rnd(R.theta)+"°",
+      d:"底辺 X "+rnd(R.adj)+" ／ 高さ Y "+rnd(R.opp)+" ／ 斜辺 L "+rnd(R.hyp),
+      st:{order:editedOrder.slice(),vals:{theta:T.theta,adj:T.adj,opp:T.opp,hyp:T.hyp}}});
+  }
 }
+RESTORE.trig=st=>{
+  if(!st)return;
+  $("#trigMode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.mode==="tri"));
+  $("#triPanel").style.display="";$("#taperPanel").style.display="none";
+  Object.keys(T).forEach(k=>T[k]=st.vals[k]!=null?st.vals[k]:null);
+  editedOrder=st.order.slice();
+  tFields.forEach(f=>{
+    const k=f.dataset.key;
+    f.querySelector("input").value=editedOrder.includes(k)&&T[k]!=null?T[k]:"";
+  });
+  solveTri();
+};
 function drawTri(R){
   const svg=$("#triSvg"),W=360,H=230;
   if(!R){svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" fill="#5B6B7C" font-size="13" text-anchor="middle">入力すると図が表示されます</text>';return;}
@@ -871,38 +1498,1104 @@ document.querySelectorAll("#trigMode button").forEach(b=>{
   };
 });
 
-/* ========================================================= タブ & スワイプ ========================================================= */
-const TABS=["fit","screw","trig"];
-function showTab(name){
-  TABS.forEach(t=>{
-    $("#screen-"+t).classList.toggle("active",t===name);
-    $("#tab-"+t).classList.toggle("on",t===name);
+/* ========================================================= ボルト・軸の強度 =========================================================
+   単位は内部でSI固定（N・mm・MPa）。表示のみ kN / N·m / kgf を併記する。
+   ========================================================= */
+const KGF=9.80665; // 1 kgf = 9.80665 N
+
+/* 材料（公開されているJIS規格値のみ。メーカー固有データは持たない）
+   Rm=引張強さ MPa, Ry=降伏点または0.2%耐力 MPa, E=縦弾性係数 GPa, brittle=脆性材（降伏点なし） */
+const MATERIALS=[
+ {n:"SS400",     std:"JIS G 3101", Rm:400, Ry:245, E:206},
+ {n:"S45C",      std:"JIS G 4051（焼ならし）", Rm:690, Ry:490, E:206},
+ {n:"SCM435",    std:"JIS G 4053（調質）", Rm:930, Ry:785, E:206},
+ {n:"SUS304",    std:"JIS G 4303", Rm:520, Ry:205, E:193},
+ {n:"SUS316",    std:"JIS G 4303", Rm:520, Ry:205, E:193},
+ {n:"A5052",     std:"JIS H 4000", Rm:195, Ry:110, E:70},
+ {n:"A6061-T6",  std:"JIS H 4000", Rm:265, Ry:245, E:69},
+ {n:"A7075-T6",  std:"JIS H 4000", Rm:540, Ry:470, E:71},
+ {n:"FC250",     std:"JIS G 5501", Rm:250, Ry:null, E:110, brittle:true},
+ {n:"FCD450",    std:"JIS G 5502", Rm:450, Ry:280, E:165},
+ {n:"C3604",     std:"JIS H 3250", Rm:335, Ry:null, E:100, brittle:true}
+];
+
+/* 強度区分（JIS B 1051 / ステンレスは JIS B 1054-1）
+   Sp=保証応力 MPa。8.8 は呼び径で値が変わるため big: を持つ。
+   ※ 区分の呼称（左×100＝引張強さ 等）はあくまで目安で、規格が規定する最小値は
+     4.8→420、5.8→520、10.9→1040、12.9→1220 のように呼称より高い。ここは規格値を使う。 */
+const BOLT_GRADES=[
+ {n:"4.6",  Rm:400, Ry:240, Sp:225},
+ {n:"4.8",  Rm:420, Ry:320, Sp:310},
+ {n:"5.6",  Rm:500, Ry:300, Sp:280},
+ {n:"5.8",  Rm:520, Ry:400, Sp:380},
+ {n:"6.8",  Rm:600, Ry:480, Sp:440},
+ {n:"8.8",  Rm:800, Ry:640, Sp:580, big:{Rm:830,Ry:660,Sp:600}}, // big = 呼び径16mm超
+ {n:"9.8",  Rm:900, Ry:720, Sp:650},
+ {n:"10.9", Rm:1040,Ry:940, Sp:830},
+ {n:"12.9", Rm:1220,Ry:1100,Sp:970},
+ {n:"A2-70",Rm:700, Ry:450, ss:true},
+ {n:"A2-80",Rm:800, Ry:600, ss:true},
+ {n:"A4-70",Rm:700, Ry:450, ss:true},
+ {n:"A4-80",Rm:800, Ry:600, ss:true}
+];
+
+// 有効断面積 As（JIS B 1082）: As = 0.7854 (d − 0.9382 P)²
+function boltAs(d,P){return 0.7854*Math.pow(d-0.9382*P,2);}
+
+let stState={mode:"bolt",sf:3,
+  bolt:{name:"M8",grade:"8.8",K:0.17,pre:70,shear:"thread"},
+  shaft:{shape:"solid",d:30,di:20,mat:"S45C",key:0,tin:"power",pw:5.5,rpm:1450,tq:100,M:0}};
+
+const fN=v=>v>=1000?(v/1000).toFixed(2)+" kN":v.toFixed(0)+" N";
+const fKgf=v=>(v/KGF)>=1000?((v/KGF)/1000).toFixed(2)+" tf":(v/KGF).toFixed(0)+" kgf";
+const resRow=(k,v,sub,hl)=>'<div class="res'+(hl?" hl":"")+'"><span class="k">'+k+'</span>'+
+  '<span class="v num">'+v+(sub?'<span class="sub">'+sub+"</span>":"")+"</span></div>";
+
+/* ---- チップ群の生成 ---- */
+function buildStrengthChips(){
+  const sz=$("#boltSizes");sz.innerHTML="";
+  SCREW_DATA.mc.list.filter(r=>r[3]===1&&r[1]>=3).forEach(r=>{
+    const c=document.createElement("button");c.className="chip num";c.textContent=r[0];
+    c.onclick=()=>{stState.bolt.name=r[0];buildStrengthChips();calcBolt();};
+    if(r[0]===stState.bolt.name)c.style.cssText="border-color:var(--strength);color:var(--strength)";
+    sz.appendChild(c);
   });
+  const gr=$("#boltGrades");gr.innerHTML="";
+  BOLT_GRADES.forEach(g=>{
+    const c=document.createElement("button");c.className="chip num";c.textContent=g.n;
+    c.onclick=()=>{stState.bolt.grade=g.n;buildStrengthChips();calcBolt();};
+    if(g.n===stState.bolt.grade)c.style.cssText="border-color:var(--strength);color:var(--strength)";
+    gr.appendChild(c);
+  });
+  const mt=$("#shaftMats");mt.innerHTML="";
+  MATERIALS.forEach(m=>{
+    const c=document.createElement("button");c.className="chip";c.textContent=m.n;
+    c.onclick=()=>{stState.shaft.mat=m.n;buildStrengthChips();calcShaft();};
+    if(m.n===stState.shaft.mat)c.style.cssText="border-color:var(--strength);color:var(--strength)";
+    mt.appendChild(c);
+  });
+}
+
+/* ---- ボルト ---- */
+function calcBolt(){
+  const B=stState.bolt, S=stState.sf;
+  const row=SCREW_DATA.mc.list.find(r=>r[0]===B.name);
+  const g0=BOLT_GRADES.find(x=>x.n===B.grade);
+  if(!row||!g0)return;
+  const d=row[1],P=row[2];
+  // JIS B 1051: 強度区分8.8は呼び径16mm超で引張強さ・耐力が上がる
+  const g=(g0.big&&d>16)?Object.assign({},g0,g0.big):g0;
+  const As=boltAs(d,P);
+  const d3=d-1.082532*P-(0.866025*P)/6; // 谷の径（応力計算用）
+  const Ff=g.Ry*As*B.pre/100;           // 締付軸力（耐力の指定%）
+  const T=B.K*d*Ff/1000;                // 締付トルク N·m （K·d·Ff、dはmm）
+  const Pa=g.Ry*As/S;                   // 許容引張荷重（安全率考慮）
+  const Ashear=(B.shear==="thread")?As:Math.PI*d*d/4;
+  const Va=g.Ry*Ashear/(Math.sqrt(3)*S); // 許容せん断荷重（ミーゼス）
+  const tauT=16*(T*1000*0.5)/(Math.PI*Math.pow(d3,3)); // 締付時のねじり応力（ねじ部で約半分）
+  const sigma=Ff/As;
+  const eq=Math.sqrt(sigma*sigma+3*tauT*tauT);
+
+  let h="";
+  h+=resRow("有効断面積 As",As.toFixed(1)+" mm²","JIS B 1082");
+  h+=resRow("引張強さ Rm",g.Rm+" MPa",(g0.big&&d>16)?"呼び径16mm超の値":"");
+  h+=resRow(g.ss?"0.2%耐力":"降伏点 / 耐力",g.Ry+" MPa","");
+  if(g.Sp)h+=resRow("保証荷重",fN(g.Sp*As),fKgf(g.Sp*As));
+  h+=resRow("締付軸力 Ff",fN(Ff),"耐力の"+B.pre+"% ／ "+fKgf(Ff),true);
+  h+=resRow("締付トルク T",T.toFixed(1)+" N·m",(T/KGF).toFixed(1)+" kgf·m ／ K="+B.K,true);
+  h+=resRow("締付時の相当応力",eq.toFixed(0)+" MPa","耐力の"+(eq/g.Ry*100).toFixed(0)+"%（ねじり込み含む）");
+  h+=resRow("許容引張荷重",fN(Pa),"安全率 "+S+" ／ "+fKgf(Pa));
+  h+=resRow("許容せん断荷重",fN(Va),(B.shear==="thread"?"ねじ部 As":"円筒部 πd²/4")+" ／ "+fKgf(Va));
+  h+=resRow("必要ねじ込み深さ",Math.round(d)+" / "+Math.round(d*1.5)+" / "+Math.round(d*2)+" mm","鋼 / 鋳鉄 / アルミ の目安");
+  $("#boltOut").innerHTML=h;
+
+  const warn=$("#boltWarn");let w="";
+  if(eq>g.Ry)w+='<div class="warn">⚠ 締付時の相当応力が<b>耐力を超えています</b>（'+eq.toFixed(0)+" MPa &gt; "+g.Ry+
+    " MPa）。締付軸力の%を下げてください。</div>";
+  if(g.ss&&d>20)w+='<div class="warn">ℹ ステンレスボルトの強度区分値はM20以下が対象です。それより大きい呼び径は規格表で確認してください。</div>';
+  if(B.grade==="12.9")w+='<div class="warn">ℹ 12.9は高強度ゆえ遅れ破壊（水素脆化）の懸念があります。めっき品・腐食環境での使用は要注意です。</div>';
+  warn.innerHTML=w;
+
+  $("#boltNote").innerHTML="※ 締付軸力＝耐力×As×指定%（一般に60〜75%）。締付トルクは <b>T = K·d·Ff</b>（JIS B 1083）。"+
+    "K は座面・ねじ面の摩擦で大きく変わり、実測との差が±30%程度出ることがあります。"+
+    "許容荷重は耐力を安全率で割った値で、締付軸力とは別物です（締付軸力＝どこまで締めるか、許容荷重＝外から掛けてよい力）。";
+
+  pushHistory({s:"strength",t:B.name+" "+B.grade,
+    d:"締付軸力 "+fN(Ff)+" ／ 締付トルク "+T.toFixed(1)+" N·m（K="+B.K+"）",
+    st:{mode:"bolt",sf:S,bolt:Object.assign({},B)}});
+}
+
+/* 必要な軸径を逆算する。
+   need = Me/σa（必要な断面係数 Z）または Te/τa（必要な極断面係数 Zp）。
+   中実は解析解。中空は内径を保ったまま外径を二分法で解く（中実の式を流用すると
+   内径ぶんの欠損を無視して過小評価になるため）。 */
+function reqDia(need,di,kf,polar){
+  const k=polar?16:32;
+  if(!di)return Math.pow(k*need/(Math.PI*kf),1/3);
+  const sec=d=>kf*Math.PI*(Math.pow(d,4)-Math.pow(di,4))/(k*d);
+  let lo=di,hi=di+1000;
+  for(let i=0;i<200;i++){const mid=(lo+hi)/2;if(sec(mid)<need)lo=mid;else hi=mid;}
+  return (lo+hi)/2;
+}
+
+/* ---- 軸 ---- */
+function calcShaft(){
+  const H=stState.shaft, S=stState.sf;
+  const m=MATERIALS.find(x=>x.n===H.mat);
+  const d=H.d, di=(H.shape==="hollow")?H.di:0;
+  const out=$("#shaftOut"), warn=$("#shaftWarn");
+  if(!(d>0)||(H.shape==="hollow"&&!(di>=0&&di<d))){
+    out.innerHTML="";warn.innerHTML='<div class="warn">⚠ 外径 d &gt; 0、中空の場合は 内径 di &lt; 外径 d で入力してください。</div>';return;
+  }
+  const kf=H.key?0.75:1; // キー溝による断面欠損
+  const Z =kf*Math.PI*(Math.pow(d,4)-Math.pow(di,4))/(32*d); // mm³
+  const Zp=kf*Math.PI*(Math.pow(d,4)-Math.pow(di,4))/(16*d);
+  // トルク: T[N·m] = 9550 × P[kW] / N[min⁻¹]
+  const Tnm=(H.tin==="power")?(H.rpm>0?9550*H.pw/H.rpm:0):H.tq;
+  const T=Tnm*1000, M=H.M*1000; // N·mm
+  const tau=T/Zp, sig=M/Z;
+  const Te=Math.sqrt(M*M+T*T), Me=(M+Math.sqrt(M*M+T*T))/2;
+  const sigE=Me/Z, tauE=Te/Zp;
+  // 脆性材は降伏点がないため引張強さ基準（安全率は+1して扱う）
+  const base=m.brittle?m.Rm:m.Ry, baseName=m.brittle?"引張強さ":"降伏点/耐力";
+  const Sef=m.brittle?S+1:S;
+  const siga=base/Sef, taua=siga/Math.sqrt(3);
+  const dReq=Math.max(reqDia(Me/siga,di,kf,false),reqDia(Te/taua,di,kf,true));
+
+  let h="";
+  h+=resRow("断面係数 Z",Z.toFixed(0)+" mm³",H.key?"キー溝で×0.75":"");
+  h+=resRow("極断面係数 Zp",Zp.toFixed(0)+" mm³","");
+  h+=resRow("ねじりモーメント T",Tnm.toFixed(1)+" N·m",
+    H.tin==="power"?"9550×"+H.pw+"kW÷"+H.rpm+"min⁻¹":"");
+  h+=resRow("ねじり応力 τ",tau.toFixed(1)+" MPa","");
+  if(M>0){
+    h+=resRow("曲げ応力 σ",sig.toFixed(1)+" MPa","");
+    h+=resRow("相当曲げ Me",(Me/1000).toFixed(1)+" N·m","(M+√(M²+T²))/2");
+    h+=resRow("相当ねじり Te",(Te/1000).toFixed(1)+" N·m","√(M²+T²)");
+  }
+  h+=resRow("相当曲げ応力 σe",sigE.toFixed(1)+" MPa","");
+  h+=resRow("相当ねじり応力 τe",tauE.toFixed(1)+" MPa","");
+  h+=resRow("許容曲げ応力 σa",siga.toFixed(1)+" MPa",m.n+" "+baseName+" "+base+" MPa ÷ "+Sef);
+  h+=resRow("許容せん断応力 τa",taua.toFixed(1)+" MPa","σa/√3（ミーゼス）");
+  h+=resRow("必要な軸径",dReq.toFixed(1)+" mm",
+    di?"内径 φ"+di+" のままでの必要外径":"この条件を満たす最小径",true);
+  out.innerHTML=h;
+
+  const ok=(sigE<=siga)&&(tauE<=taua);
+  out.innerHTML+='<div class="judge '+(ok?"ok":"ng")+'"><span class="jl">'+(ok?"✓ 成立":"✕ 不足")+"</span>"+
+    '<span class="sm">'+(ok?
+      "φ"+d+" は必要径 φ"+dReq.toFixed(1)+" を満たしています（余裕 "+((d/dReq-1)*100).toFixed(0)+"%）":
+      "φ"+d+" では不足です。φ"+dReq.toFixed(1)+" 以上にするか、材料・安全率を見直してください")+"</span></div>";
+
+  let w="";
+  if(m.brittle)w+='<div class="warn">ℹ '+m.n+'は脆性材で明確な降伏点がないため、<b>引張強さ基準・安全率'+Sef+
+    '</b>（指定安全率+1）で評価しています。衝撃荷重には特に弱いので注意してください。</div>';
+  if(Tnm<=0&&M<=0)w+='<div class="warn">⚠ トルクも曲げモーメントも0です。負荷を入力してください。</div>';
+  warn.innerHTML=w;
+
+  $("#shaftNote").innerHTML="※ 中実 Z=πd³/32、Zp=πd³/16。中空は π(d⁴−di⁴)/(32d)、/(16d)。"+
+    "曲げとねじりが同時に働く場合は相当曲げ <b>Me=(M+√(M²+T²))/2</b>、相当ねじり <b>Te=√(M²+T²)</b> で評価します。"+
+    "キー溝ありは断面を0.75倍として扱う簡易評価です。応力集中（段付き・止め穴・溝）や疲労限度は考慮していません。";
+
+  pushHistory({s:"strength",t:"φ"+d+(di?"/φ"+di:"")+" "+m.n,
+    d:"T "+Tnm.toFixed(1)+" N·m ／ τe "+tauE.toFixed(1)+" MPa ／ 必要径 φ"+dReq.toFixed(1)+"　"+(ok?"成立":"不足"),
+    st:{mode:"shaft",sf:S,shaft:Object.assign({},H)}});
+}
+
+function calcStrength(){stState.mode==="bolt"?calcBolt():calcShaft();}
+
+/* ---- 入力の結線 ---- */
+$("#stMode").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#stMode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    stState.mode=b.dataset.m;
+    $("#boltPanel").style.display=(stState.mode==="bolt")?"":"none";
+    $("#shaftPanel").style.display=(stState.mode==="shaft")?"":"none";
+    calcStrength();renderRef();
+  };
+});
+$("#stLoad").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#stLoad").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    stState.sf=+b.dataset.s;$("#stSf").value=stState.sf;calcStrength();
+  };
+});
+$("#stSf").addEventListener("input",e=>{
+  const v=parseNum(e.target.value);
+  if(v>0){stState.sf=v;$("#stLoad").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.s===v));calcStrength();}
+});
+$("#boltK").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#boltK").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    stState.bolt.K=+b.dataset.k;calcBolt();
+  };
+});
+$("#boltShear").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#boltShear").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    stState.bolt.shear=b.dataset.p;calcBolt();
+  };
+});
+$("#boltPre").addEventListener("input",e=>{
+  const v=parseNum(e.target.value);if(v>0&&v<=100){stState.bolt.pre=v;calcBolt();}
+});
+$("#shaftShape").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#shaftShape").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    stState.shaft.shape=b.dataset.s;
+    $("#shDiRow").style.display=(b.dataset.s==="hollow")?"":"none";
+    calcShaft();
+  };
+});
+$("#shaftKey").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#shaftKey").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    stState.shaft.key=+b.dataset.k;calcShaft();
+  };
+});
+$("#shaftTin").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#shaftTin").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    stState.shaft.tin=b.dataset.t;
+    const pw=(b.dataset.t==="power");
+    $("#shPwRow").style.display=pw?"":"none";
+    $("#shRpmRow").style.display=pw?"":"none";
+    $("#shTqRow").style.display=pw?"none":"";
+    calcShaft();
+  };
+});
+[["#shD","d"],["#shDi","di"],["#shPw","pw"],["#shRpm","rpm"],["#shTq","tq"],["#shM","M"]].forEach(([sel,key])=>{
+  $(sel).addEventListener("input",e=>{
+    const v=parseNum(e.target.value);
+    if(v!=null){stState.shaft[key]=v;calcShaft();}
+  });
+});
+RESTORE.strength=st=>{
+  if(!st)return;
+  stState.sf=st.sf;$("#stSf").value=st.sf;
+  $("#stLoad").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.s===st.sf));
+  stState.mode=st.mode;
+  $("#stMode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.m===st.mode));
+  $("#boltPanel").style.display=(st.mode==="bolt")?"":"none";
+  $("#shaftPanel").style.display=(st.mode==="shaft")?"":"none";
+  if(st.mode==="bolt"&&st.bolt){
+    Object.assign(stState.bolt,st.bolt);
+    $("#boltPre").value=stState.bolt.pre;
+    $("#boltK").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.k===stState.bolt.K));
+    $("#boltShear").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.p===stState.bolt.shear));
+  }
+  if(st.mode==="shaft"&&st.shaft){
+    Object.assign(stState.shaft,st.shaft);
+    const H=stState.shaft;
+    $("#shD").value=H.d;$("#shDi").value=H.di;$("#shPw").value=H.pw;
+    $("#shRpm").value=H.rpm;$("#shTq").value=H.tq;$("#shM").value=H.M;
+    $("#shDiRow").style.display=(H.shape==="hollow")?"":"none";
+    $("#shaftShape").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.s===H.shape));
+    $("#shaftKey").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.k===H.key));
+    $("#shaftTin").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.t===H.tin));
+    const pw=(H.tin==="power");
+    $("#shPwRow").style.display=pw?"":"none";$("#shRpmRow").style.display=pw?"":"none";
+    $("#shTqRow").style.display=pw?"none":"";
+  }
+  buildStrengthChips();calcStrength();
+};
+
+/* ========================================================= 切削条件 =========================================================
+   Vc = πDn/1000, Vf = fz·z·n（フライス）/ f·n（ドリル・旋盤）
+   Q = ap·ae·Vf/1000, Pc = MRR·kc/(60×10⁶×η)
+   目安レンジは公開文献・教科書ベースの自作値。メーカー数表は転載していない。
+   ========================================================= */
+const CUT_MATS=[
+ {id:"P",n:"P 鋼",full:"炭素鋼・合金鋼（SS400・S45C・SCM）",kc:2100,
+  vc:{hss:[15,35],ca:[60,140],co:[120,220]},fzk:[0.004,0.010],fk:[0.015,0.030],ft:[0.10,0.40]},
+ {id:"M",n:"M ステンレス",full:"SUS304・SUS316 等",kc:2600,
+  vc:{hss:[8,18],ca:[40,100],co:[60,140]},fzk:[0.003,0.007],fk:[0.010,0.020],ft:[0.10,0.30]},
+ {id:"K",n:"K 鋳鉄",full:"FC250・FCD450 等",kc:1300,
+  vc:{hss:[15,30],ca:[60,140],co:[100,200]},fzk:[0.005,0.012],fk:[0.020,0.035],ft:[0.15,0.45]},
+ {id:"N",n:"N 非鉄",full:"アルミ・銅合金・樹脂",kc:800,
+  vc:{hss:[50,120],ca:[150,500],co:[200,600]},fzk:[0.005,0.015],fk:[0.020,0.040],ft:[0.10,0.40]},
+ {id:"S",n:"S 耐熱・チタン",full:"インコネル・チタン合金",kc:3000,
+  vc:{hss:[3,8],ca:[15,40],co:[20,60]},fzk:[0.002,0.005],fk:[0.008,0.015],ft:[0.08,0.20]},
+ {id:"H",n:"H 高硬度",full:"焼入れ鋼 45HRC以上",kc:3600,
+  vc:{hss:null,ca:[40,80],co:[50,120]},fzk:[0.002,0.006],fk:[0.008,0.020],ft:[0.05,0.15]}
+];
+// ドリルは切りくず排出が苦しいため低め、旋盤は連続切削のため高めが通例
+const CUT_FACTOR={mill:1,drill:0.6,turn:1.3};
+const CUT_ETA=0.8; // 機械効率
+
+let cutState={mode:"mill",mat:"P",tool:"co",
+ mill:{D:10,z:4,Vc:150,fz:0.06,ap:5,ae:5,L:100},
+ drill:{D:8.5,Vc:70,f:0.2,dep:25,angle:118},
+ turn:{D:50,Vc:180,f:0.2,ap:2,L:50,R:0.8}};
+
+function cutMat(){return CUT_MATS.find(m=>m.id===cutState.mat);}
+function cutSugVc(){
+  const b=cutMat().vc[cutState.tool];
+  return b?[b[0]*CUT_FACTOR[cutState.mode],b[1]*CUT_FACTOR[cutState.mode]]:null;
+}
+function cutSugFeed(){
+  const m=cutMat();
+  if(cutState.mode==="mill")return m.fzk.map(k=>k*cutState.mill.D);
+  if(cutState.mode==="drill")return m.fk.map(k=>k*cutState.drill.D);
+  return m.ft.slice();
+}
+function renderCutSug(){
+  const vc=cutSugVc(),fd=cutSugFeed();
+  $("#sugVcT").textContent=vc?Math.round(vc[0])+"–"+Math.round(vc[1])+" m/min":"—（ハイス不適）";
+  const lbl=cutState.mode==="mill"?"fz":"f",u=cutState.mode==="mill"?"mm/刃":"mm/rev";
+  $("#sugFzL").innerHTML="目安 "+lbl+': <b id="sugFzT" class="num">'+fd[0].toFixed(3).replace(/0+$/,"").replace(/\.$/,"")+"–"+fd[1].toFixed(3).replace(/0+$/,"").replace(/\.$/,"")+" "+u+"</b>";
+}
+function buildCutChips(){
+  const el=$("#cutMats");el.innerHTML="";
+  CUT_MATS.forEach(m=>{
+    const c=document.createElement("button");c.className="chip";c.textContent=m.n;
+    c.title=m.full;
+    c.onclick=()=>{cutState.mat=m.id;buildCutChips();renderCutSug();calcCut();};
+    if(m.id===cutState.mat)c.style.cssText="border-color:var(--cut);color:var(--cut)";
+    el.appendChild(c);
+  });
+}
+const fmtMin=t=>t>=1?t.toFixed(2)+" 分":(t*60).toFixed(1)+" 秒";
+
+function calcCut(){
+  const m=cutMat();let h="",w="";
+  if(cutState.mode==="mill"){
+    const c=cutState.mill;
+    if(!(c.D>0&&c.z>0&&c.Vc>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・z・Vc を正しく入力してください。</div>';return;}
+    const n=1000*c.Vc/(Math.PI*c.D), Vf=c.fz*c.z*n;
+    const Q=c.ap*c.ae*Vf/1000, Pc=c.ap*c.ae*Vf*m.kc/(60e6*CUT_ETA);
+    h+=resRow("回転数 n",Math.round(n)+" min⁻¹","1000Vc/(πD)",true);
+    h+=resRow("送り速度 Vf",Math.round(Vf)+" mm/min","fz×z×n",true);
+    h+=resRow("材料除去率 Q",Q.toFixed(1)+" cm³/min","");
+    h+=resRow("所要動力 Pc",Pc.toFixed(2)+" kW","kc="+m.kc+" MPa・効率"+CUT_ETA);
+    if(c.ae>0&&c.ae<c.D/2){
+      const r=c.ae/c.D,corr=1/(2*Math.sqrt(r-r*r));
+      h+=resRow("切りくず薄化補正 fz",(c.fz*corr).toFixed(3)+" mm/刃","ae/D="+r.toFixed(2)+" → fz×"+corr.toFixed(2));
+    }
+    if(c.L>0)h+=resRow("加工時間（1パス）",fmtMin(c.L/Vf),"L="+c.L+" mm");
+    if(c.ae>c.D)w+='<div class="warn">⚠ ae が工具径を超えています。</div>';
+    if(n>20000)w+='<div class="warn">ℹ 回転数が高めです。機械の主軸上限を確認してください。</div>';
+    $("#cutNote").innerHTML="※ Vc=πDn/1000。ae&lt;D/2 の側面切削では切りくずが薄くなるため、補正後のfzまで送りを上げられます（工具剛性の範囲で）。kcは平均切りくず厚み0.1〜0.3mm想定の目安です。";
+    pushHistory({s:"cut",t:"フライス φ"+c.D+"×"+c.z+"枚 "+m.id,
+      d:"n "+Math.round(n)+" ／ Vf "+Math.round(Vf)+" mm/min ／ "+Pc.toFixed(2)+" kW",
+      st:JSON.parse(JSON.stringify(cutState))});
+  }else if(cutState.mode==="drill"){
+    const c=cutState.drill;
+    if(!(c.D>0&&c.Vc>0&&c.f>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・Vc・f を正しく入力してください。</div>';return;}
+    const n=1000*c.Vc/(Math.PI*c.D), Vf=c.f*n;
+    const tip=c.D/2*Math.tan(d2r(90-c.angle/2));
+    const travel=c.dep+tip+2; // 空走2mm
+    const Q=Math.PI*c.D*c.D/4*Vf/1000, Pc=Q*1000*m.kc/(60e6*CUT_ETA);
+    h+=resRow("回転数 n",Math.round(n)+" min⁻¹","1000Vc/(πD)",true);
+    h+=resRow("送り速度 Vf",Math.round(Vf)+" mm/min","f×n",true);
+    h+=resRow("先端円錐の長さ",tip.toFixed(2)+" mm","先端角"+c.angle+"° ≈ "+(tip/c.D).toFixed(2)+"D");
+    h+=resRow("必要移動量",travel.toFixed(1)+" mm","深さ＋先端＋空走2mm");
+    h+=resRow("1穴の加工時間",fmtMin(travel/Vf),"");
+    h+=resRow("所要動力 Pc",Pc.toFixed(2)+" kW","kc="+m.kc+" MPa");
+    if(c.dep>5*c.D)w+='<div class="warn">ℹ 穴深さが5Dを超えています。ステップ（ペック）加工と十分な切りくず排出を推奨します。</div>';
+    $("#cutNote").innerHTML="※ 止まり穴でねじ深さを確保する場合は、先端円錐ぶんを深さに加えてください。貫通穴は抜け際で送りを落とすとバリが減ります。";
+    pushHistory({s:"cut",t:"ドリル φ"+c.D+" "+m.id,
+      d:"n "+Math.round(n)+" ／ Vf "+Math.round(Vf)+" mm/min ／ 1穴 "+fmtMin(travel/Vf),
+      st:JSON.parse(JSON.stringify(cutState))});
+  }else{
+    const c=cutState.turn;
+    if(!(c.D>0&&c.Vc>0&&c.f>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・Vc・f を正しく入力してください。</div>';return;}
+    const n=1000*c.Vc/(Math.PI*c.D), Vf=c.f*n;
+    const Q=c.ap*c.f*c.Vc, Pc=Q*m.kc/(60000*CUT_ETA);
+    const Rz=c.f*c.f/(8*c.R)*1000;
+    h+=resRow("回転数 n",Math.round(n)+" min⁻¹","加工径 φ"+c.D+" のとき",true);
+    h+=resRow("送り速度 Vf",Math.round(Vf)+" mm/min","f×n");
+    h+=resRow("理論粗さ Rz",Rz.toFixed(1)+" μm","f²/(8Rε) ／ Ra ≈ "+(Rz/4).toFixed(1)+" μm",true);
+    h+=resRow("材料除去率 Q",Q.toFixed(1)+" cm³/min","ap×f×Vc");
+    h+=resRow("所要動力 Pc",Pc.toFixed(2)+" kW","kc="+m.kc+" MPa・効率"+CUT_ETA);
+    if(c.L>0)h+=resRow("加工時間（1パス）",fmtMin(c.L/Vf),"L="+c.L+" mm");
+    if(Rz>25)w+='<div class="warn">ℹ 理論粗さが25μmを超えています。仕上げでは送りを下げるかノーズRを大きくしてください。</div>';
+    $("#cutNote").innerHTML="※ 理論粗さは幾何学的な最良値で、実際は構成刃先・振動でこれより粗くなります。仕上げ面重視なら f ≦ √(8·Rε·目標Rz/1000)。";
+    pushHistory({s:"cut",t:"旋盤 φ"+c.D+" "+m.id,
+      d:"n "+Math.round(n)+" ／ f "+c.f+" ／ Rz "+Rz.toFixed(1)+" μm",
+      st:JSON.parse(JSON.stringify(cutState))});
+  }
+  $("#cutOut").innerHTML=h;$("#cutWarn").innerHTML=w;
+}
+function cutShowPanels(){
+  $("#cutMillP").style.display=cutState.mode==="mill"?"":"none";
+  $("#cutDrillP").style.display=cutState.mode==="drill"?"":"none";
+  $("#cutTurnP").style.display=cutState.mode==="turn"?"":"none";
+}
+$("#cutMode").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#cutMode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    cutState.mode=b.dataset.m;cutShowPanels();renderCutSug();calcCut();renderRef();
+  };
+});
+$("#cutTool").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#cutTool").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    cutState.tool=b.dataset.t;renderCutSug();calcCut();
+  };
+});
+$("#cdAngle").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#cdAngle").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    cutState.drill.angle=+b.dataset.a;calcCut();
+  };
+});
+$("#ctR").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#ctR").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    cutState.turn.R=+b.dataset.r;calcCut();
+  };
+});
+$("#sugVcBtn").onclick=()=>{
+  const vc=cutSugVc();if(!vc)return;
+  const mid=Math.round((vc[0]+vc[1])/2);
+  const o=cutState[cutState.mode];o.Vc=mid;
+  $({mill:"#cmVc",drill:"#cdVc",turn:"#ctVc"}[cutState.mode]).value=mid;
+  calcCut();
+};
+$("#sugFzBtn").onclick=()=>{
+  const fd=cutSugFeed();
+  const mid=Math.round((fd[0]+fd[1])/2/0.005)*0.005;
+  const o=cutState[cutState.mode];
+  if(cutState.mode==="mill"){o.fz=mid;$("#cmFz").value=mid;}
+  else{o.f=mid;$({drill:"#cdF",turn:"#ctF"}[cutState.mode]).value=mid;}
+  calcCut();
+};
+[["#cmD","mill","D",1],["#cmZ","mill","z",0],["#cmVc","mill","Vc",0],["#cmFz","mill","fz",0],
+ ["#cmAp","mill","ap",0],["#cmAe","mill","ae",0],["#cmL","mill","L",0],
+ ["#cdD","drill","D",1],["#cdVc","drill","Vc",0],["#cdF","drill","f",0],["#cdDep","drill","dep",0],
+ ["#ctD","turn","D",1],["#ctVc","turn","Vc",0],["#ctF","turn","f",0],["#ctAp","turn","ap",0],["#ctL","turn","L",0]
+].forEach(([sel,mode,key,sug])=>{
+  $(sel).addEventListener("input",e=>{
+    const v=parseNum(e.target.value);
+    if(v!=null){cutState[mode][key]=v;if(sug)renderCutSug();calcCut();}
+  });
+});
+RESTORE.cut=st=>{
+  if(!st)return;
+  cutState=JSON.parse(JSON.stringify(st));
+  $("#cutMode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.m===cutState.mode));
+  $("#cutTool").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.t===cutState.tool));
+  $("#cdAngle").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.a===cutState.drill.angle));
+  $("#ctR").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.r===cutState.turn.R));
+  const c=cutState;
+  $("#cmD").value=c.mill.D;$("#cmZ").value=c.mill.z;$("#cmVc").value=c.mill.Vc;$("#cmFz").value=c.mill.fz;
+  $("#cmAp").value=c.mill.ap;$("#cmAe").value=c.mill.ae;$("#cmL").value=c.mill.L;
+  $("#cdD").value=c.drill.D;$("#cdVc").value=c.drill.Vc;$("#cdF").value=c.drill.f;$("#cdDep").value=c.drill.dep;
+  $("#ctD").value=c.turn.D;$("#ctVc").value=c.turn.Vc;$("#ctF").value=c.turn.f;$("#ctAp").value=c.turn.ap;$("#ctL").value=c.turn.L;
+  buildCutChips();cutShowPanels();renderCutSug();calcCut();
+};
+
+/* ========================================================= 梁のたわみ =========================================================
+   E[MPa]·I[mm⁴]、L[mm]、P[N]、w[N/mm]、M[N·mm] → δ[mm]、σ=M/Z[MPa]。
+   型鋼の断面性能は公称寸法から計算（隅R無視の参考値）。数表の丸写しはしない。
+   ========================================================= */
+const H_BEAMS=[
+ ["H100×50×5×7",100,50,5,7],["H100×100×6×8",100,100,6,8],["H125×60×6×8",125,60,6,8],
+ ["H125×125×6.5×9",125,125,6.5,9],["H150×75×5×7",150,75,5,7],["H148×100×6×9",148,100,6,9],
+ ["H150×150×7×10",150,150,7,10],["H175×90×5×8",175,90,5,8],["H175×175×7.5×11",175,175,7.5,11],
+ ["H198×99×4.5×7",198,99,4.5,7],["H200×100×5.5×8",200,100,5.5,8],["H194×150×6×9",194,150,6,9],
+ ["H200×200×8×12",200,200,8,12],["H248×124×5×8",248,124,5,8],["H250×125×6×9",250,125,6,9],
+ ["H244×175×7×11",244,175,7,11],["H250×250×9×14",250,250,9,14],["H298×149×5.5×8",298,149,5.5,8],
+ ["H300×150×6.5×9",300,150,6.5,9],["H294×200×8×12",294,200,8,12],["H300×300×10×15",300,300,10,15],
+ ["H346×174×6×9",346,174,6,9],["H350×175×7×11",350,175,7,11],["H340×250×9×14",340,250,9,14],
+ ["H350×350×12×19",350,350,12,19],["H396×199×7×11",396,199,7,11],["H400×200×8×13",400,200,8,13],
+ ["H390×300×10×16",390,300,10,16],["H400×400×13×21",400,400,13,21],["H446×199×8×12",446,199,8,12],
+ ["H450×200×9×14",450,200,9,14],["H496×199×9×14",496,199,9,14],["H500×200×10×16",500,200,10,16],
+ ["H588×300×12×20",588,300,12,20],["H600×200×11×17",600,200,11,17],["H700×300×13×24",700,300,13,24],
+ ["H800×300×14×26",800,300,14,26],["H900×300×16×28",900,300,16,28]];
+const CHANNELS=[
+ ["[75×40×5×7",75,40,5,7],["[100×50×5×7.5",100,50,5,7.5],["[125×65×6×8",125,65,6,8],
+ ["[150×75×6.5×10",150,75,6.5,10],["[180×75×7×10.5",180,75,7,10.5],["[200×80×7.5×11",200,80,7.5,11],
+ ["[200×90×8×13.5",200,90,8,13.5],["[250×90×9×13",250,90,9,13],["[300×90×9×13",300,90,9,13],
+ ["[300×90×12×16",300,90,12,16],["[380×100×10.5×16",380,100,10.5,16]];
+const ANGLES=[
+ ["L25×25×3",25,3],["L30×30×3",30,3],["L40×40×3",40,3],["L40×40×5",40,5],
+ ["L50×50×4",50,4],["L50×50×6",50,6],["L60×60×5",60,5],["L65×65×6",65,6],["L65×65×8",65,8],
+ ["L75×75×6",75,6],["L75×75×9",75,9],["L90×90×7",90,7],["L90×90×10",90,10],
+ ["L100×100×7",100,7],["L100×100×10",100,10],["L100×100×13",100,13],["L120×120×8",120,8],
+ ["L130×130×9",130,9],["L130×130×12",130,12],["L150×150×12",150,12],["L150×150×15",150,15],
+ ["L175×175×12",175,12],["L200×200×15",200,15],["L200×200×20",200,20],["L250×250×25",250,25]];
+const I_BEAMS=[
+ ["I150×75×5.5×9.5",150,75,5.5,9.5],["I200×100×7×10",200,100,7,10],["I250×125×7.5×12.5",250,125,7.5,12.5],
+ ["I300×150×8×13",300,150,8,13],["I350×150×9×15",350,150,9,15],["I400×150×10×18",400,150,10,18],
+ ["I450×175×11×20",450,175,11,20],["I600×190×13×25",600,190,13,25]];
+const SQ_PIPES=[
+ ["□20×20×1.6",20,1.6],["□25×25×1.6",25,1.6],["□30×30×1.6",30,1.6],["□40×40×1.6",40,1.6],
+ ["□40×40×2.3",40,2.3],["□50×50×1.6",50,1.6],["□50×50×2.3",50,2.3],["□50×50×3.2",50,3.2],
+ ["□60×60×2.3",60,2.3],["□60×60×3.2",60,3.2],["□75×75×2.3",75,2.3],["□75×75×3.2",75,3.2],
+ ["□75×75×4.5",75,4.5],["□100×100×2.3",100,2.3],["□100×100×3.2",100,3.2],["□100×100×4.5",100,4.5],
+ ["□125×125×4.5",125,4.5],["□125×125×6",125,6],["□150×150×4.5",150,4.5],["□150×150×6",150,6],
+ ["□200×200×6",200,6],["□200×200×8",200,8],["□250×250×9",250,9]];
+const RD_PIPES=[
+ ["φ21.7×2",21.7,2],["φ27.2×2",27.2,2],["φ34×2.3",34,2.3],["φ42.7×2.3",42.7,2.3],
+ ["φ48.6×2.3",48.6,2.3],["φ48.6×2.8",48.6,2.8],["φ60.5×2.3",60.5,2.3],["φ60.5×3.2",60.5,3.2],
+ ["φ76.3×2.8",76.3,2.8],["φ76.3×3.2",76.3,3.2],["φ89.1×2.8",89.1,2.8],["φ89.1×3.2",89.1,3.2],
+ ["φ101.6×3.2",101.6,3.2],["φ114.3×3.5",114.3,3.5],["φ139.8×4.5",139.8,4.5],["φ165.2×4.5",165.2,4.5],
+ ["φ190.7×5.3",190.7,5.3],["φ216.3×5.8",216.3,5.8],["φ267.4×6.6",267.4,6.6],["φ318.5×6.9",318.5,6.9]];
+const BEAM_FAMS=[
+ {id:"h", n:"H形鋼", list:H_BEAMS},
+ {id:"ch",n:"溝形鋼", list:CHANNELS},
+ {id:"an",n:"等辺山形鋼", list:ANGLES},
+ {id:"ib",n:"I形鋼", list:I_BEAMS},
+ {id:"sq",n:"角形鋼管", list:SQ_PIPES},
+ {id:"rp",n:"丸形鋼管", list:RD_PIPES}];
+
+function propsHShape(H,B,t1,t2,axis){
+  const A=2*B*t2+(H-2*t2)*t1;
+  if(axis==="y"){
+    const Iy=(2*t2*Math.pow(B,3)+(H-2*t2)*Math.pow(t1,3))/12;
+    return {A,I:Iy,Z:2*Iy/B};
+  }
+  const Ix=(B*Math.pow(H,3)-(B-t1)*Math.pow(H-2*t2,3))/12;
+  return {A,I:Ix,Z:2*Ix/H};
+}
+function propsAngle(a,t){
+  const A=t*(2*a-t);
+  const c=(a*a+a*t-t*t)/(2*(2*a-t)); // 図心（かど基準）
+  const I=t*Math.pow(a,3)/12+a*t*Math.pow(a/2-c,2)
+         +(a-t)*Math.pow(t,3)/12+(a-t)*t*Math.pow(c-t/2,2);
+  return {A,I,Z:I/(a-c),c};
+}
+function propsSqPipe(B,t){
+  const b=B-2*t,A=B*B-b*b,I=(Math.pow(B,4)-Math.pow(b,4))/12;
+  return {A,I,Z:2*I/B};
+}
+function propsRdPipe(D,t){
+  const d=D-2*t,A=Math.PI*(D*D-d*d)/4,I=Math.PI*(Math.pow(D,4)-Math.pow(d,4))/64;
+  return {A,I,Z:2*I/D};
+}
+function beamSection(){
+  const b=beamState;
+  if(b.src==="dims"){
+    if(b.shape==="round"){const d=b.d.rd;return {A:Math.PI*d*d/4,I:Math.PI*Math.pow(d,4)/64,Z:Math.PI*Math.pow(d,3)/32,name:"丸棒 φ"+d};}
+    if(b.shape==="pipe"){const p=propsRdPipe(b.d.pd,b.d.pt);p.name="丸パイプ φ"+b.d.pd+"×t"+b.d.pt;return p;}
+    if(b.shape==="rect"){const {rb,rh}=b.d;return {A:rb*rh,I:rb*Math.pow(rh,3)/12,Z:rb*rh*rh/6,name:"矩形 "+rb+"×"+rh};}
+    const p=propsSqPipe2(b.d.bb,b.d.bh,b.d.bt);p.name="角パイプ "+b.d.bb+"×"+b.d.bh+"×t"+b.d.bt;return p;
+  }
+  const fam=BEAM_FAMS.find(f=>f.id===b.fam),row=fam.list[b.size]||fam.list[0];
+  let p;
+  if(fam.id==="h"||fam.id==="ib")p=propsHShape(row[1],row[2],row[3],row[4],b.axis);
+  else if(fam.id==="ch")p=propsHShape(row[1],row[2],row[3],row[4],"x");
+  else if(fam.id==="an")p=propsAngle(row[1],row[2]);
+  else if(fam.id==="sq")p=propsSqPipe(row[1],row[2]);
+  else p=propsRdPipe(row[1],row[2]);
+  p.name=row[0];return p;
+}
+function propsSqPipe2(B,H,t){
+  const b=B-2*t,hh=H-2*t,A=B*H-b*hh,I=(B*Math.pow(H,3)-b*Math.pow(hh,3))/12;
+  return {A,I,Z:2*I/H};
+}
+/* 支持条件×荷重の8ケース。v は P[N]／w[N/mm]／M0[N·mm] */
+const BEAM_CASES=[
+ {id:"c1",n:"片持ち・先端集中",load:"P",
+  d:(v,L,EI)=>v*Math.pow(L,3)/(3*EI), m:(v,L)=>v*L, mAt:"固定端"},
+ {id:"c2",n:"片持ち・等分布",load:"w",
+  d:(v,L,EI)=>v*Math.pow(L,4)/(8*EI), m:(v,L)=>v*L*L/2, mAt:"固定端"},
+ {id:"c3",n:"両端支持・中央集中",load:"P",
+  d:(v,L,EI)=>v*Math.pow(L,3)/(48*EI), m:(v,L)=>v*L/4, mAt:"中央"},
+ {id:"c4",n:"両端支持・等分布",load:"w",
+  d:(v,L,EI)=>5*v*Math.pow(L,4)/(384*EI), m:(v,L)=>v*L*L/8, mAt:"中央"},
+ {id:"c5",n:"両端支持・任意位置集中",load:"P",pos:true,
+  d:(v,L,EI,a)=>{const b=Math.min(a,L-a);return v*b*Math.pow(L*L-b*b,1.5)/(9*Math.sqrt(3)*L*EI);},
+  m:(v,L,a)=>v*a*(L-a)/L, mAt:"荷重点"},
+ {id:"c6",n:"両端固定・中央集中",load:"P",
+  d:(v,L,EI)=>v*Math.pow(L,3)/(192*EI), m:(v,L)=>v*L/8, mAt:"固定端・中央"},
+ {id:"c7",n:"両端固定・等分布",load:"w",
+  d:(v,L,EI)=>v*Math.pow(L,4)/(384*EI), m:(v,L)=>v*L*L/12, mAt:"固定端"},
+ {id:"c8",n:"片持ち・先端モーメント",load:"M",
+  d:(v,L,EI)=>v*L*L/(2*EI), m:(v)=>v, mAt:"全長一様"}];
+
+let beamState={src:"dims",shape:"round",d:{rd:30,pd:48.6,pt:2.8,rb:30,rh:40,bb:50,bh:50,bt:3.2},
+ fam:"h",size:10,axis:"x",mat:"SS400",sf:3,c:"c3",L:1000,P:1000,w:500,M0:100,a:300,defl:300};
+
+function buildBeamChips(){
+  const fm=$("#beamFam");fm.innerHTML="";
+  BEAM_FAMS.forEach(f=>{
+    const c=document.createElement("button");c.className="chip";c.textContent=f.n;
+    c.onclick=()=>{beamState.fam=f.id;beamState.size=0;buildBeamChips();calcBeam();};
+    if(f.id===beamState.fam)c.style.cssText="border-color:var(--beam);color:var(--beam)";
+    fm.appendChild(c);
+  });
+  const sel=$("#beamSize");
+  const fam=BEAM_FAMS.find(f=>f.id===beamState.fam);
+  sel.innerHTML=fam.list.map((r,i)=>'<option value="'+i+'"'+(i===beamState.size?" selected":"")+">"+r[0]+"</option>").join("");
+  $("#beamAxis").style.display=(beamState.fam==="h")?"":"none";
+  const mt=$("#beamMats");mt.innerHTML="";
+  MATERIALS.forEach(m=>{
+    const c=document.createElement("button");c.className="chip";c.textContent=m.n;
+    c.onclick=()=>{beamState.mat=m.n;buildBeamChips();calcBeam();};
+    if(m.n===beamState.mat)c.style.cssText="border-color:var(--beam);color:var(--beam)";
+    mt.appendChild(c);
+  });
+  const cs=$("#beamCases");cs.innerHTML="";
+  BEAM_CASES.forEach(bc=>{
+    const c=document.createElement("button");c.className="chip";c.textContent=bc.n;
+    c.onclick=()=>{beamState.c=bc.id;buildBeamChips();beamShowLoadRows();calcBeam();};
+    if(bc.id===beamState.c)c.style.cssText="border-color:var(--beam);color:var(--beam)";
+    cs.appendChild(c);
+  });
+}
+function beamShowLoadRows(){
+  const bc=BEAM_CASES.find(x=>x.id===beamState.c);
+  $("#bmPRow").style.display=(bc.load==="P")?"":"none";
+  $("#bmWRow").style.display=(bc.load==="w")?"":"none";
+  $("#bmM0Row").style.display=(bc.load==="M")?"":"none";
+  $("#bmARow").style.display=bc.pos?"":"none";
+}
+function calcBeam(){
+  const b=beamState;
+  const sec=beamSection();
+  const m=MATERIALS.find(x=>x.n===b.mat);
+  const bc=BEAM_CASES.find(x=>x.id===b.c);
+  const warnEl=$("#beamWarn");let w="";
+  // 型鋼選択時のサマリ
+  if(b.src==="steel"){
+    const fv=v=>v>=1000?Math.round(v).toLocaleString():v>=100?v.toFixed(0):v.toFixed(1);
+    $("#beamSecInfo").innerHTML=
+      resRow("断面積 A",(sec.A/100).toFixed(2)+" cm²","単位質量 ≈ "+(sec.A*0.00785).toFixed(1)+" kg/m")+
+      resRow("断面二次モーメント I",fv(sec.I/1e4)+" cm⁴","")+
+      resRow("断面係数 Z",fv(sec.Z/1e3)+" cm³","");
+  }
+  if(!(b.L>0)||!(sec.I>0)){$("#beamOut").innerHTML="";warnEl.innerHTML='<div class="warn">⚠ 寸法とスパンを正しく入力してください。</div>';return;}
+  const E=m.E*1000, EI=E*sec.I;
+  let v;
+  if(bc.load==="P")v=b.P;
+  else if(bc.load==="w")v=b.w/1000; // N/m → N/mm
+  else v=b.M0*1000; // N·m → N·mm
+  const a=bc.pos?Math.min(Math.max(b.a,1),b.L-1):0;
+  const delta=bc.d(v,b.L,EI,a);
+  const Mmax=bc.pos?bc.m(v,b.L,a):bc.m(v,b.L);
+  const sig=Mmax/sec.Z;
+  const base=m.brittle?m.Rm:m.Ry, Sef=m.brittle?b.sf+1:b.sf;
+  const siga=base/Sef;
+  const dLim=b.defl>0?b.L/b.defl:null;
+  const okD=dLim==null||delta<=dLim, okS=sig<=siga;
+
+  let h="";
+  h+=resRow("断面",sec.name,"I="+(sec.I/1e4).toFixed(1)+" cm⁴ ／ Z="+(sec.Z/1e3).toFixed(1)+" cm³");
+  h+=resRow("最大たわみ δ",delta<0.001?delta.toExponential(2)+" mm":delta.toFixed(3)+" mm",
+    dLim!=null?"許容 "+dLim.toFixed(2)+" mm（L/"+b.defl+"）":"基準指定なし",true);
+  h+=resRow("最大曲げモーメント",(Mmax/1000).toFixed(1)+" N·m","位置: "+bc.mAt);
+  h+=resRow("曲げ応力 σ",sig.toFixed(1)+" MPa","許容 "+siga.toFixed(1)+" MPa（"+m.n+"÷"+Sef+"）",true);
+  const ok=okD&&okS;
+  h+='<div class="judge '+(ok?"ok":"ng")+'"><span class="jl">'+(ok?"✓ 成立":"✕ 不足")+"</span>"+
+    '<span class="sm">たわみ '+(okD?"OK":"超過")+(dLim!=null?"（δ="+delta.toFixed(2)+" / 許容"+dLim.toFixed(2)+" mm）":"")+
+    " ／ 応力 "+(okS?"OK":"超過")+"（σ="+sig.toFixed(1)+" / 許容"+siga.toFixed(1)+" MPa）</span></div>";
+  $("#beamOut").innerHTML=h;
+
+  if(b.src==="steel"&&b.fam==="an")w+='<div class="warn">ℹ 山形鋼は荷重方向によってはねじれを伴います。表示値は図心x軸まわりの参考値で、主軸（傾いた軸）まわりではありません。</div>';
+  if(bc.pos&&(b.a<=0||b.a>=b.L))w+='<div class="warn">⚠ 荷重位置 a はスパンの内側で指定してください。</div>';
+  if(delta>b.L/50)w+='<div class="warn">⚠ たわみが非常に大きく、微小変形理論の範囲を超えています。断面を大きくしてください。</div>';
+  warnEl.innerHTML=w;
+
+  $("#beamNote").innerHTML="※ δ・Mの式は材料力学の標準解です（"+bc.n+"）。自重は考慮していません。長スパンでは自重を等分布荷重として加えてください"+
+    (b.src==="steel"?"（この断面の自重 ≈ "+(sec.A*0.00785*9.80665).toFixed(1)+" N/m）":"")+"。";
+
+  pushHistory({s:"beam",t:sec.name,
+    d:bc.n+"　δ "+delta.toFixed(2)+" mm ／ σ "+sig.toFixed(1)+" MPa　"+(ok?"成立":"不足"),
+    st:JSON.parse(JSON.stringify(beamState))});
+}
+$("#beamSrc").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#beamSrc").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    beamState.src=b.dataset.s;
+    $("#beamDimsP").style.display=(beamState.src==="dims")?"":"none";
+    $("#beamSteelP").style.display=(beamState.src==="steel")?"":"none";
+    calcBeam();
+  };
+});
+$("#beamShape").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#beamShape").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    beamState.shape=b.dataset.s;
+    ["round","pipe","rect","box"].forEach(s=>$("#bmG_"+s).style.display=(s===beamState.shape)?"":"none");
+    calcBeam();
+  };
+});
+$("#beamSize").addEventListener("change",e=>{beamState.size=+e.target.value;calcBeam();});
+$("#beamAxis").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#beamAxis").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    beamState.axis=b.dataset.a;calcBeam();
+  };
+});
+$("#beamSfSeg").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#beamSfSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    beamState.sf=+b.dataset.s;calcBeam();
+  };
+});
+$("#beamDefl").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#beamDefl").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    beamState.defl=+b.dataset.d;calcBeam();
+  };
+});
+[["#bmRd","d","rd"],["#bmPd","d","pd"],["#bmPt","d","pt"],["#bmRb","d","rb"],["#bmRh","d","rh"],
+ ["#bmBb","d","bb"],["#bmBh","d","bh"],["#bmBt","d","bt"]].forEach(([sel,obj,key])=>{
+  $(sel).addEventListener("input",e=>{
+    const v=parseNum(e.target.value);
+    if(v!=null){beamState.d[key]=v;calcBeam();}
+  });
+});
+[["#bmL","L"],["#bmP","P"],["#bmW","w"],["#bmM0","M0"],["#bmA","a"]].forEach(([sel,key])=>{
+  $(sel).addEventListener("input",e=>{
+    const v=parseNum(e.target.value);
+    if(v!=null){beamState[key]=v;calcBeam();}
+  });
+});
+RESTORE.beam=st=>{
+  if(!st)return;
+  beamState=JSON.parse(JSON.stringify(st));
+  const b=beamState;
+  $("#beamSrc").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.s===b.src));
+  $("#beamDimsP").style.display=(b.src==="dims")?"":"none";
+  $("#beamSteelP").style.display=(b.src==="steel")?"":"none";
+  $("#beamShape").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.s===b.shape));
+  ["round","pipe","rect","box"].forEach(s=>$("#bmG_"+s).style.display=(s===b.shape)?"":"none");
+  $("#beamAxis").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.a===b.axis));
+  $("#beamSfSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.s===b.sf));
+  $("#beamDefl").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.d===b.defl));
+  $("#bmRd").value=b.d.rd;$("#bmPd").value=b.d.pd;$("#bmPt").value=b.d.pt;
+  $("#bmRb").value=b.d.rb;$("#bmRh").value=b.d.rh;
+  $("#bmBb").value=b.d.bb;$("#bmBh").value=b.d.bh;$("#bmBt").value=b.d.bt;
+  $("#bmL").value=b.L;$("#bmP").value=b.P;$("#bmW").value=b.w;$("#bmM0").value=b.M0;$("#bmA").value=b.a;
+  buildBeamChips();beamShowLoadRows();calcBeam();
+};
+
+/* ========================================================= ナビゲーション =========================================================
+   左ドロワー = 全機能／右ドロワー = 早見表・履歴。
+   機能を追加するときは SCREENS に1行足し、対応する <main class="screen" id="screen-◯◯"> を置くだけ。
+   ========================================================= */
+const SCREENS=[
+  {id:"fit",   icon:"⌀", name:"はめあい公差", sub:"JIS B 0401 ／ すきま・しめしろ"},
+  {id:"screw", icon:"⌇", name:"ねじ諸元",     sub:"有効径・谷径・タップ下穴"},
+  {id:"trig",  icon:"△", name:"三角関数・テーパ", sub:"勾配・角度・テーパ比"},
+  {id:"strength", icon:"⚙", name:"ボルト・軸の強度", sub:"軸力・締付トルク・せん断"},
+  {id:"cut",  icon:"⚒", name:"切削条件", sub:"回転数・送り・動力・粗さ"},
+  {id:"beam", icon:"工", name:"梁のたわみ・強度", sub:"8種の支持条件・型鋼対応"}
+];
+const INFO_SCREENS=[
+  {id:"about", icon:"ⓘ", name:"使い方・単位について"},
+  {id:"legal", icon:"⚖", name:"免責・規格の出典"}
+];
+let curScreen="fit";
+
+function buildMenu(){
+  const body=$("#menuBody");body.innerHTML="";
+  const item=(s)=>{
+    const b=document.createElement("button");
+    b.className="dw-item"+(s.id===curScreen?" on":"");
+    b.dataset.go=s.id;
+    b.innerHTML='<span class="ico">'+s.icon+'</span><span class="tx"><span class="nm">'+s.name+"</span>"+
+      (s.sub?'<span class="sb">'+s.sub+"</span>":"")+"</span>";
+    b.onclick=()=>showScreen(s.id);
+    return b;
+  };
+  const lab=document.createElement("div");lab.className="dw-lab";lab.textContent="計算ツール";
+  body.appendChild(lab);
+  SCREENS.forEach(s=>body.appendChild(item(s)));
+  const sep=document.createElement("div");sep.className="dw-sep";body.appendChild(sep);
+  INFO_SCREENS.forEach(s=>body.appendChild(item(s)));
+}
+
+function showScreen(id){
+  curScreen=id;
+  const all=SCREENS.concat(INFO_SCREENS);
+  all.forEach(s=>$("#screen-"+s.id).classList.toggle("active",s.id===id));
+  const s=all.find(x=>x.id===id);
+  $("#hdSub").textContent=s?s.name:"";
+  buildMenu();
+  closeDrawer();
   window.scrollTo({top:0});
   // 非表示中はscrollTopを設定できないため、表示時にホイール位置を選択値へ同期
-  document.querySelectorAll("#screen-"+name+" .wheel").forEach(el=>{
+  document.querySelectorAll("#screen-"+id+" .wheel").forEach(el=>{
     if(!el._items)return;
     const idx=el._items.findIndex(it=>it.value===el._value);
     if(idx>=0){el.scrollTop=idx*ITEM_H;markWheel(el,idx);}
   });
+  renderRef();
 }
-TABS.forEach(t=>{$("#tab-"+t).onclick=()=>showTab(t);});
-let tx=null,ty=null,swipeOK=false;
+
+/* ---- ドロワー開閉 ---- */
+let openSide=null;
+function setDrawer(side){
+  openSide=side;
+  $("#drawerL").classList.toggle("open",side==="l");
+  $("#drawerR").classList.toggle("open",side==="r");
+  $("#scrim").classList.toggle("on",!!side);
+  document.body.classList.toggle("drawer-open",!!side);
+  if(side==="r")renderRef();
+}
+function closeDrawer(){setDrawer(null);}
+$("#btnMenu").onclick=()=>setDrawer(openSide==="l"?null:"l");
+$("#btnRef").onclick=()=>setDrawer(openSide==="r"?null:"r");
+$("#scrim").onclick=closeDrawer;
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeDrawer);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer();});
+
+/* ---- エッジスワイプ（ドロワーの補助操作） ----
+   Safariでは左端＝戻る・右端＝進むに取られるため、あくまで補助。
+   横スクロールするチップ列やホイールの上では判定しない。 */
+const EDGE=20, SWIPE_MIN=60;
+let sw=null;
 document.addEventListener("touchstart",e=>{
-  // ホイール・チップ・入力欄の上ではタブ切替スワイプを無効化
-  swipeOK=!e.target.closest("input,.wheel,.hchips,.seg");
-  tx=e.touches[0].clientX;ty=e.touches[0].clientY;
+  sw=null;
+  const t=e.touches[0];
+  if(e.target.closest(".hchips,.wheel,.seg,input,#scrim"))return;
+  const inDrawer=e.target.closest(".drawer");
+  if(openSide){
+    // 開いているドロワーを、その端の方向へ払って閉じる
+    if(inDrawer)sw={x:t.clientX,y:t.clientY,mode:"close",side:openSide};
+    return;
+  }
+  if(inDrawer)return;
+  if(t.clientX<=EDGE)sw={x:t.clientX,y:t.clientY,mode:"open",side:"l"};
+  else if(t.clientX>=window.innerWidth-EDGE)sw={x:t.clientX,y:t.clientY,mode:"open",side:"r"};
 },{passive:true});
 document.addEventListener("touchend",e=>{
-  if(tx==null||!swipeOK)return;
-  const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;
-  if(Math.abs(dx)>80&&Math.abs(dy)<50&&Math.abs(dx)>Math.abs(dy)*1.8){
-    const cur=TABS.findIndex(t=>document.getElementById("screen-"+t).classList.contains("active"));
-    const next=dx<0?Math.min(TABS.length-1,cur+1):Math.max(0,cur-1);
-    showTab(TABS[next]);
+  if(!sw)return;
+  const dx=e.changedTouches[0].clientX-sw.x, dy=e.changedTouches[0].clientY-sw.y;
+  const ok=Math.abs(dx)>SWIPE_MIN&&Math.abs(dx)>Math.abs(dy)*1.8;
+  if(ok){
+    if(sw.mode==="open"){
+      if(sw.side==="l"&&dx>0)setDrawer("l");
+      else if(sw.side==="r"&&dx<0)setDrawer("r");
+    }else{
+      if((sw.side==="l"&&dx<0)||(sw.side==="r"&&dx>0))closeDrawer();
+    }
   }
-  tx=null;
+  sw=null;
 },{passive:true});
+
+/* ========================================================= 右ドロワー：早見表 =========================================================
+   各画面に対応する参照表。数値は計算機と同じテーブルから生成し、二重管理しない。
+   ========================================================= */
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+function refTable(head,rows){
+  let h='<table class="ref-t">';
+  if(head)h+="<tr>"+head.map(x=>"<th>"+esc(x)+"</th>").join("")+"</tr>";
+  rows.forEach(r=>{h+="<tr>"+r.map(x=>'<td class="'+(/^[-\d.φμ ]+$/.test(String(x))?"num":"")+'">'+esc(x)+"</td>").join("")+"</tr>";});
+  return h+"</table>";
+}
+const REFS={
+  fit(){
+    let h='<div class="ref-h">よく使うはめあいと用途</div>';
+    h+=refTable(["組合せ","性格","主な用途"],[
+      ["H7/g6","すきま","軽く動く・手で抜き差しできる。案内軸、位置決めピン"],
+      ["H7/h6","すきま≒0","精密な位置決め。手で押し込める程度"],
+      ["H7/js6","中間","位置決め精度が要る取付け。木ハンマーで着脱"],
+      ["H7/k6","中間","がたつきを嫌う嵌合。プーリ・歯車のボス"],
+      ["H7/m6","中間〜しまり","トルクは伝えないが動いてほしくない部位"],
+      ["H7/p6","しまり","圧入。分解を想定しない結合"],
+      ["H7/r6","しまり","強い圧入。焼きばめ・冷やしばめ併用"],
+      ["H8/f7","すきま","一般的な回転軸・すべり軸受"],
+      ["H9/d9","大きなすきま","粉じん・高温環境、粗い回転部"]
+    ]);
+    h+='<div class="ref-h">公差等級の目安</div>';
+    h+=refTable(["等級","用途の目安"],[
+      ["IT5〜6","精密軸・軸受まわり。研削仕上げ"],
+      ["IT7","一般的なはめあい部。リーマ・研削"],
+      ["IT8","やや粗いはめあい。旋削・中ぐり"],
+      ["IT9〜11","位置決めを要さない部位。一般切削"],
+      ["IT12〜","鋳肌・素材寸法レベル"]
+    ]);
+    h+='<div class="ref-note">μm＝1/1000 mm。穴は大文字（H7）、軸は小文字（g6）で表します。</div>';
+    return h;
+  },
+  screw(){
+    const S=SCREW_DATA.mc;
+    // 現在の画面設定（収録範囲・ひっかかり率）に追従させる
+    const e=screwState.engage;
+    const rows=screwList().map(r=>{
+      const d=r[1],P=r[2];
+      return [r[0], P+" mm", nearestDrill(drillFromEngage(d,P,e))+" mm", (d-0.649519*P).toFixed(3)+" mm"];
+    });
+    let h='<div class="ref-h">メートル並目 タップ下穴（ひっかかり率'+e+"%）</div>";
+    h+=refTable(["呼び","ピッチ","推奨ドリル","有効径"],rows);
+    h+='<div class="ref-h">六角ボルト 二面幅／六角穴レンチ</div>';
+    h+=refTable(["呼び","二面幅","六角穴"],
+      Object.keys(S.hex).map(k=>[k,S.hex[k]+" mm",S.hexKey[k]?S.hexKey[k]+" mm":"—"]));
+    h+='<div class="ref-note">下穴は「呼び径 − 1.299 × ピッチ × ひっかかり率」を実在ドリル径へ丸めた値です。'+
+      '75%はJIS標準の下穴表と一致します。二面幅は六角ボルト（JIS B 1180）、六角穴は六角穴付きボルト（JIS B 1176）。'+
+      'JIS B 1002小形系列等で異なる場合があります（M10=17、M12=19 等の旧規格・メーカー品に注意）。</div>';
+    return h;
+  },
+  strength(){
+    let h="";
+    if(stState.mode==="bolt"){
+      h+='<div class="ref-h">強度区分（JIS B 1051 / B 1054-1）</div>';
+      h+=refTable(["区分","引張強さ","耐力","保証応力"],
+        BOLT_GRADES.map(g=>[g.n,g.Rm+" MPa",g.Ry+" MPa",g.Sp?g.Sp+" MPa":"—"]));
+      h+='<div class="ref-h">呼び径ごとの有効断面積 As</div>';
+      h+=refTable(["呼び","ピッチ","As"],
+        SCREW_DATA.mc.list.filter(r=>r[3]===1&&r[1]>=3).map(r=>[r[0],r[2]+" mm",boltAs(r[1],r[2]).toFixed(1)+" mm²"]));
+      h+='<div class="ref-note">強度区分の読み方: 左の数字×100＝引張強さ[MPa]、左×右×10＝耐力[MPa]の<b>目安</b>。'+
+        'ただし規格が定める最小値はこれより高く（4.8→420、5.8→520、10.9→1040、12.9→1220 MPa）、'+
+        '本アプリは<b>規格値</b>を使っています。<b>8.8は呼び径16mm超で830/660 MPa</b>に変わります。'+
+        'ステンレス（A2/A4）の値はM20以下が対象です。</div>';
+    }else{
+      h+='<div class="ref-h">材料の機械的性質</div>';
+      h+=refTable(["材料","引張強さ","降伏/耐力","縦弾性係数"],
+        MATERIALS.map(m=>[m.n,m.Rm+" MPa",m.Ry?m.Ry+" MPa":"—",m.E+" GPa"]));
+      h+='<div class="ref-h">安全率の目安</div>';
+      h+=refTable(["荷重の種類","安全率","備考"],[
+        ["静荷重","3","一定方向・一定大きさ"],
+        ["繰返し（片振り）","5","回転軸・往復動"],
+        ["繰返し（両振り）","5〜8","応力の向きが反転する"],
+        ["衝撃荷重","8〜12","急な負荷変動・打撃"],
+        ["脆性材（鋳鉄等）","+1して引張強さ基準","降伏点がないため"]
+      ]);
+      h+='<div class="ref-note">材料値はJIS規格の下限値です。実材料はロット・熱処理・寸法で変わるため、'+
+        'ミルシートの値を優先してください。応力集中・疲労限度は本アプリでは考慮していません。</div>';
+    }
+    return h;
+  },
+  cut(){
+    const t=cutState.tool,f=CUT_FACTOR[cutState.mode];
+    const modeN={mill:"フライス",drill:"ドリル",turn:"旋盤"}[cutState.mode];
+    let h='<div class="ref-h">目安 Vc（'+modeN+'・'+{hss:"ハイス",ca:"超硬",co:"コーティング超硬"}[t]+'）</div>';
+    h+=refTable(["被削材","Vc の目安","kc"],
+      CUT_MATS.map(m=>{
+        const b=m.vc[t];
+        return [m.n,b?Math.round(b[0]*f)+"–"+Math.round(b[1]*f)+" m/min":"不適",m.kc+" MPa"];
+      }));
+    h+='<div class="ref-h">よく使う換算</div>';
+    h+=refTable(["求めるもの","式"],[
+      ["回転数 n","1000·Vc ÷ (π·D)"],
+      ["切削速度 Vc","π·D·n ÷ 1000"],
+      ["送り速度 Vf","fz×z×n（フライス）"],
+      ["1刃送り fz","Vf ÷ (z×n)"],
+      ["理論粗さ Rz","f²/(8·Rε)×1000 [μm]"],
+      ["ドリル先端長","≈0.3D（118°）"]
+    ]);
+    h+='<div class="ref-note">目安レンジは公開文献・教科書ベースの自作値です。<b>工具メーカーのカタログ推奨値を必ず優先</b>してください。kcは動力概算用（切りくず厚0.1〜0.3mm想定）。</div>';
+    return h;
+  },
+  beam(){
+    let h='<div class="ref-h">たわみ・曲げの公式</div>';
+    h+=refTable(["支持・荷重","δmax","Mmax"],[
+      ["片持ち・先端P","PL³/3EI","PL"],
+      ["片持ち・等分布w","wL⁴/8EI","wL²/2"],
+      ["両端支持・中央P","PL³/48EI","PL/4"],
+      ["両端支持・等分布w","5wL⁴/384EI","wL²/8"],
+      ["両端固定・中央P","PL³/192EI","PL/8"],
+      ["両端固定・等分布w","wL⁴/384EI","wL²/12"],
+      ["片持ち・先端M","ML²/2EI","M"]
+    ]);
+    h+='<div class="ref-h">たわみ許容の目安</div>';
+    h+=refTable(["用途","基準"],[
+      ["一般の架台・フレーム","L/300"],
+      ["コンベヤ・搬送レール","L/500"],
+      ["精密機器の定盤・ベース","L/1000"],
+      ["クレーンガーダ","L/800〜（法規参照）"]
+    ]);
+    h+='<div class="ref-h">断面二次モーメント</div>';
+    h+=refTable(["断面","I","Z"],[
+      ["丸棒 d","πd⁴/64","πd³/32"],
+      ["丸パイプ D,d","π(D⁴−d⁴)/64","2I/D"],
+      ["矩形 b×h","bh³/12","bh²/6"],
+      ["角パイプ","(BH³−bh³)/12","2I/H"]
+    ]);
+    h+='<div class="ref-note">E: 鋼206 GPa／SUS 193／アルミ 70。荷重方向は h（高さ）方向です。</div>';
+    return h;
+  },
+  trig(){
+    let h='<div class="ref-h">よく使う角度の三角比</div>';
+    h+=refTable(["角度","sin","cos","tan"],
+      [1,2,3,5,10,15,20,30,45,60].map(a=>[a+"°",
+        Math.sin(d2r(a)).toFixed(4),Math.cos(d2r(a)).toFixed(4),Math.tan(d2r(a)).toFixed(4)]));
+    h+='<div class="ref-h">テーパ比 → 角度</div>';
+    // 手打ちの数値は誤りやすいため、比から都度計算する
+    h+=refTable(["テーパ比","全角（挟み角）","片側"],
+      [10,20,30,50,100].map(n=>["1/"+n,
+        rnd(2*r2d(Math.atan(1/(2*n))),4)+"°", rnd(r2d(Math.atan(1/(2*n))),4)+"°"]));
+    h+='<div class="ref-h">勾配 → 角度</div>';
+    h+=refTable(["勾配","角度"],
+      [10,20,50,100,200].map(n=>["1/"+n, rnd(r2d(Math.atan(1/n)),4)+"°"]));
+    h+='<div class="ref-note">テーパ比は「両端の<b>直径</b>差 ÷ 長さ」で、角度は挟み角になります。勾配（こう配）は片側の高さ比で、そのまま片側の角度です。両者の混同に注意してください。モールステーパ等の規格テーパは比が端数のため、規格表の値で確認してください。</div>';
+    return h;
+  }
+};
+
+/* ========================================================= 右ドロワー：履歴 =========================================================
+   端末内(localStorage)にのみ保存。外部送信は一切なし。
+   各計算機は pushHistory({s,t,d,st}) を呼ぶだけでよい。復元は RESTORE に登録する。
+   ========================================================= */
+const HIST_KEY="mg_hist_v1", HIST_MAX=50;
+let histCache=null;
+function histLoad(){
+  if(histCache)return histCache;
+  try{histCache=JSON.parse(localStorage.getItem(HIST_KEY))||[];}catch(e){histCache=[];}
+  if(!Array.isArray(histCache))histCache=[];
+  return histCache;
+}
+function histSave(){try{localStorage.setItem(HIST_KEY,JSON.stringify(histCache));}catch(e){}}
+let histTimer=null,histPending=null;
+function pushHistory(entry){
+  histPending=entry;
+  clearTimeout(histTimer);
+  // 入力の途中経過を残さないよう、操作が落ち着いてから1件だけ保存する
+  histTimer=setTimeout(()=>{
+    const e=histPending;histPending=null;if(!e)return;
+    let h=histLoad();
+    if(h.length&&h[0].s===e.s&&h[0].t===e.t&&h[0].d===e.d)return;
+    // 同じ計算は重複させず、最新として先頭へ移す（履歴からの復元で増殖しないように）
+    h=h.filter(x=>!(x.s===e.s&&x.t===e.t&&x.d===e.d));
+    histCache=h;
+    e.ts=Date.now();h.unshift(e);
+    if(h.length>HIST_MAX)h.length=HIST_MAX;
+    histSave();
+    if(openSide==="r"&&refMode==="hist")renderRef();
+  },1500);
+}
+function histTime(ts){
+  const d=new Date(ts),n=new Date(),p=x=>String(x).padStart(2,"0");
+  const sameDay=d.toDateString()===n.toDateString();
+  return (sameDay?"今日":(d.getMonth()+1)+"/"+d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());
+}
+function renderHist(){
+  const h=histLoad();
+  if(!h.length)return '<div class="empty">計算履歴はまだありません。<br>各機能で計算すると、ここに自動で残ります。</div>';
+  const nameOf=id=>(SCREENS.find(s=>s.id===id)||{}).name||id;
+  let out="";
+  h.forEach((e,i)=>{
+    out+='<button class="hist-item" data-h="'+i+'"><div class="ht">'+esc(e.t)+"</div>"+
+      '<div class="hd">'+esc(e.d)+"</div>"+
+      '<div class="hm">'+esc(nameOf(e.s))+" ・ "+histTime(e.ts)+"</div></button>";
+  });
+  out+='<button class="chip" id="histClear" style="width:100%;margin-top:10px">履歴をすべて消去</button>'+
+    '<div class="ref-note">履歴はこの端末の中だけに保存されます（最大'+HIST_MAX+'件）。外部には送信されません。</div>';
+  return out;
+}
+
+let refMode="ref";
+function renderRef(){
+  const body=$("#refBody");
+  $("#refSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.r===refMode));
+  if(refMode==="hist"){
+    $("#refTitle").textContent="計算履歴";
+    body.innerHTML=renderHist();
+    const c=$("#histClear");
+    if(c)c.onclick=()=>{histCache=[];histSave();renderRef();};
+    body.querySelectorAll("[data-h]").forEach(b=>{
+      b.onclick=()=>{
+        const e=histLoad()[+b.dataset.h];
+        if(!e)return;
+        showScreen(e.s);
+        if(RESTORE[e.s])RESTORE[e.s](e.st);
+      };
+    });
+  }else{
+    $("#refTitle").textContent="早見表";
+    body.innerHTML=REFS[curScreen]?REFS[curScreen]():
+      '<div class="empty">この画面には早見表がありません。</div>';
+  }
+}
+$("#refSeg").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{refMode=b.dataset.r;renderRef();};
+});
 
 /* ========================================================= 広告 ========================================================= */
 function adCardHTML(ad){
@@ -942,9 +2635,16 @@ function initBanner(){
 }
 
 /* init */
+buildMenu();
 buildFitWheels();render();
 buildScrewWheel();
 solveTri();solveTaper();
+buildStrengthChips();calcStrength();
+buildCutChips();renderCutSug();calcCut();
+buildBeamChips();beamShowLoadRows();calcBeam();
+renderRef();
+// 起動直後の初期描画で履歴が積まれないよう、保留中の1件だけ捨てる
+clearTimeout(histTimer);histPending=null;
 initSplash();initBanner();
 </script>
 </body>
