@@ -97,7 +97,9 @@ button{font:inherit;color:inherit;border:none;background:none;cursor:pointer;}
 .wheel.c-shaft .wi.on{color:var(--shaft);}
 .wheel.c-screw .wi.on{color:var(--screw);}
 .wheel-frame{position:relative;}
-.wheel-frame::before{content:"";position:absolute;left:2px;right:2px;top:calc(50% - 28px + 12px);height:56px;
+/* 選択枠は必ず項目(高さ56px)の中央に重ねる。ずれていると指を離したとき隣に見えてしまう。
+   ホイール高224/336 いずれも pad=(H-56)/2 なので、中央から28px上が正しい位置。 */
+.wheel-frame::before{content:"";position:absolute;left:2px;right:2px;top:calc(50% - 28px);height:56px;
   border-top:2px solid var(--line);border-bottom:2px solid var(--line);
   background:rgba(255,255,255,.03);pointer-events:none;z-index:2;border-radius:6px;}
 .wheel-frame::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;border-radius:12px;
@@ -778,7 +780,7 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
 <main class="screen" id="screen-about">
   <div class="card">
     <h2>このアプリについて</h2>
-    <p class="formula">機械加工・検査の現場で使う計算をまとめた道具箱です。<b>すべての計算は端末内で完結</b>し、入力した数値が外部に送信されることはありません。オフラインでも動作します。</p>
+    <p class="formula">機械加工・検査の現場で使う計算をまとめた道具箱です。<b>すべての計算は端末内で完結</b>し、入力した数値が外部に送信されることはありません。</p>
   </div>
   <div class="card">
     <h2>画面の切り替え</h2>
