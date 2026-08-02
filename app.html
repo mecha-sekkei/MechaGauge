@@ -23,8 +23,10 @@
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
   overscroll-behavior:none;
-  /* 閉じているドロワー（画面外へtranslate）が横スクロールを作らないように */
-  overflow-x:hidden;}
+  /* 閉じているドロワー（画面外へtranslate）が横スクロールを作らないように。
+     hidden はスクロールコンテナを作ってヘッダーの position:sticky を殺すため、
+     必ず clip を使う（clip はスクロールコンテナを作らない / Safari 16+ 対応）。 */
+  overflow-x:clip;}
 body{padding-bottom:calc(var(--banner-h) + env(safe-area-inset-bottom) + 8px);}
 body.no-banner{padding-bottom:calc(env(safe-area-inset-bottom) + 8px);}
 body.drawer-open{overflow:hidden;}
