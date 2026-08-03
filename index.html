@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mech Gauge — はめあい・ねじ・強度・切削条件｜機械加工の現場計算ツール</title>
-<meta name="description" content="はめあい判定・タップ下穴・締付トルク・切削条件・梁のたわみを1つに。インストール不要、ブラウザだけで動く機械加工・検査のための計算ツール。">
+<title>Mech Gauge — はめあい・ねじ・強度・切削条件・重量計算｜機械加工の現場計算ツール</title>
+<meta name="description" content="はめあい判定・タップ下穴・締付トルク・切削条件・梁のたわみ・タクトタイム・材料の重量と比重を1つに。インストール不要、ブラウザだけで動く機械加工・検査のための計算ツール。">
 <style>
 :root{
   --bg:#0E1116;--panel:#161C24;--panel2:#1C232D;--line:#28313D;
@@ -29,6 +29,8 @@ body{background:var(--bg);color:var(--ink);
 .dl:hover{transform:translateY(-2px);}
 .dl small{display:block;font-size:.68rem;font-weight:600;opacity:.6;line-height:1.2;}
 .dl.web{background:var(--hole);color:#06121A;margin-left:12px;}
+.dl.plain{background:transparent;color:var(--ink);border:1px solid var(--line);margin-left:12px;}
+.dl.plain small{opacity:.75;}
 .btnrow{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;}
 .req{color:var(--dim);font-size:.8rem;margin-top:14px;}
 @media(max-width:520px){.dl.web{margin-left:0;}}
@@ -78,11 +80,15 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
   <div class="wrap">
     <img class="icon" src="icons/icon_B_stamp_1024.png" alt="Mech Gauge アイコン">
     <h1>Mech Gauge</h1>
-    <p class="tag">はめあい・ねじ・三角関数・強度計算・切削条件・梁のたわみ<br>機械加工と検査の現場で、必要な数値を最短で。</p>
+    <p class="tag">はめあい・ねじ・三角関数・強度計算・切削条件・梁のたわみ・タクトタイム・重量計算<br>機械加工と検査の現場で、必要な数値を最短で。</p>
     <div class="btnrow">
       <a class="dl web" href="app.html">
         ブラウザで開く
         <small>インストール不要・無料</small>
+      </a>
+      <a class="dl plain" href="app_noads.html">
+        広告なしで開く
+        <small>機能・計算内容は同じ</small>
       </a>
     </div>
     <p class="req">PC・スマホ・タブレットのブラウザで動作　—　計算はすべて端末内で完結（入力値は送信されません）<br>iPhoneアプリ版は準備中です</p>
@@ -91,7 +97,7 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
 
 <section>
   <div class="wrap">
-    <h2>6つの機能</h2>
+    <h2>8つの機能</h2>
     <p class="lead">図面を開いて、測って、判断する。その合間に必要になる計算だけを集めました。</p>
     <div class="feat">
       <div class="card h">
@@ -110,7 +116,8 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
         <span class="ico">⌇</span>
         <h3>ねじ寸法</h3>
         <ul>
-          <li>メートル並目 M0.8〜M48・細目</li>
+          <li>メートル並目 M0.8〜M48・細目 M1×0.2〜</li>
+          <li>ミニチュア S0.3〜（JIS外）も独立系列で収録</li>
           <li>ウイット W／管用 G・R・Rc</li>
           <li>有効径・谷径・二面幅・六角穴レンチ</li>
           <li>タップ下穴をひっかかり率で調整</li>
@@ -142,6 +149,7 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
         <ul>
           <li>片持ち・両端支持・両端固定の8ケース</li>
           <li>丸・角・パイプ＋H形鋼など型鋼6種</li>
+          <li>強軸／弱軸を切り替えて置き方を比較</li>
           <li>たわみ基準（L/300等）と応力で合否判定</li>
         </ul>
       </div>
@@ -153,6 +161,26 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
           <li>入力に連動して図が更新される</li>
           <li>勾配加工・座標計算の検算に</li>
           <li>テーパ：大径・小径・長さ → 片角と比</li>
+        </ul>
+      </div>
+      <div class="card h">
+        <span class="ico">⏱</span>
+        <h3>タクトタイム計算</h3>
+        <ul>
+          <li>台形加減速。時間・最高速度・加減速度を相互に逆算</li>
+          <li>加速度は G と m/s² を相互換算</li>
+          <li>速度に届かない場合は実到達速度を赤字で警告</li>
+          <li>必要推力も算出してアクチュエータ選定に</li>
+        </ul>
+      </div>
+      <div class="card s">
+        <span class="ico">⚖</span>
+        <h3>重量計算</h3>
+        <ul>
+          <li>板・丸棒・パイプ・角材・アングル・型鋼など9形状</li>
+          <li>中空ボックスは5面塞ぎとフタを個別に表示</li>
+          <li>鉄鋼・非鉄・樹脂・エンプラなど101材料を収録</li>
+          <li>「ジュラコン」「ニューライト」など商品名で検索</li>
         </ul>
       </div>
     </div>

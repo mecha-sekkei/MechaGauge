@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- このファイルは build_variants.sh が docs/app.html から自動生成した「広告なし版」です。
+     直接編集しないでください。編集は docs/app.html に対して行い、再生成してください。 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1131,8 +1133,8 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
    - img は各サイトの画像URL（読み込み失敗時は自動で文字のみ表示）
    ========================================================= */
 const AD_CONFIG = {
-  splash: { enabled: true, seconds: 4 },       // オープニング広告（秒数後に自動で閉じる）
-  banner: { enabled: true, rotateSeconds: 8 }  // 下部バナー（ローテーション間隔）
+  splash: { enabled: false, seconds: 4 },       // オープニング広告（秒数後に自動で閉じる）
+  banner: { enabled: false, rotateSeconds: 8 }  // 下部バナー（ローテーション間隔）
 };
 const ADS = [
   { name: "協賛企業A",
