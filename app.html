@@ -59,6 +59,7 @@ button{font:inherit;color:inherit;border:none;background:none;cursor:pointer;}
   border:1px solid var(--line);font-size:.98rem;font-weight:600;
   display:inline-flex;align-items:center;justify-content:center;}
 .chip:active{transform:scale(.95);}
+.chip.on{border-color:var(--screw);color:var(--screw);background:rgba(179,157,255,.12);}
 .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:3px;gap:3px;}
 .seg button{flex:1;min-height:48px;border-radius:11px;font-size:.92rem;font-weight:700;color:var(--ink-dim);padding:0 4px;}
 .seg button.on{background:#2B3644;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.4);}
@@ -132,6 +133,28 @@ svg text{font-family:ui-monospace,"SF Mono",Menlo,monospace;}
 .note{color:var(--ink-dim);font-size:.7rem;margin-top:8px;line-height:1.6;}
 .warn{color:var(--mid);font-size:.88rem;padding:9px;background:rgba(251,191,36,.08);
   border:1px solid rgba(251,191,36,.3);border-radius:11px;margin-top:6px;}
+
+/* ---- 図解カード（Phase 8） ---- */
+.dia-card .dia-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;}
+.dia-toggle{font-size:.74rem;font-weight:700;color:var(--accent);background:var(--panel2);
+  border:1px solid var(--line);border-radius:10px;padding:6px 10px;flex:0 0 auto;}
+.dia-toggle:active{transform:scale(.95);}
+.dia-body{margin-top:9px;background:#0B0E12;border:1px solid var(--line);border-radius:13px;
+  padding:8px 4px 4px;overflow-x:auto;}
+.dia-card.collapsed .dia-body{display:none;}
+.dia-body svg{display:block;margin:0 auto;}
+.dia-svg text{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;}
+.dia-dim{stroke:var(--ink-dim);stroke-width:1;}
+.dia-ext{stroke:var(--ink-dim);stroke-width:1;opacity:.6;}
+.dia-val{fill:var(--ink);font-weight:700;}
+.dia-lab{fill:var(--ink-dim);}
+
+/* ---- 結果コピー ---- */
+.copy-btn{width:100%;min-height:48px;margin-top:10px;border-radius:13px;background:var(--panel2);
+  border:1px solid var(--line);font-size:.9rem;font-weight:700;color:var(--accent);
+  display:flex;align-items:center;justify-content:center;gap:6px;}
+.copy-btn:active{transform:scale(.97);}
+.copy-btn.done{color:var(--ok);border-color:var(--ok);}
 
 /* ---- ねじ ---- */
 .screw-layout{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:start;}
@@ -336,6 +359,11 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
     </div>
   </div>
 
+  <div class="card dia-card">
+    <div class="dia-head"><h2 style="margin:0">断面図（現物のイメージ）</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+    <div class="dia-body"><svg id="fitPicSvg" class="dia-svg" viewBox="0 0 360 210" width="100%"></svg></div>
+  </div>
+
   <div class="card">
     <h2>計算結果</h2>
     <div class="limits" id="limits"></div>
@@ -343,6 +371,7 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
     <div class="gauge-wrap"><svg id="zoneSvg" viewBox="0 0 360 180" width="100%"></svg></div>
     <div class="verdict" id="verdict"></div>
     <p class="note">※ ISO 286-1 / JIS B 0401 の基本表・計算則に基づく<b>参考値</b>。重要寸法は必ず規格表で確認。μm=1/1000mm。j軸は5・6級のみ、J穴は未対応（JS推奨）。</p>
+    <button class="copy-btn" onclick="copyScreenResult('fit',this)">📋 結果をコピー</button>
   </div>
 
   <div class="card">
@@ -356,12 +385,13 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
 <main class="screen" id="screen-screw">
 
   <div class="card">
-    <div class="seg" id="screwSeries">
-      <button data-s="mc" class="on">メートル<br>並目</button>
-      <button data-s="mf">メートル<br>細目</button>
-      <button data-s="w">ウイット<br>W</button>
-      <button data-s="g">管用平行<br>G(PF)</button>
-      <button data-s="r">管用テーパ<br>R/Rc(PT)</button>
+    <div class="hchips" id="screwSeries">
+      <button class="chip on" data-s="mc">メートル並目</button>
+      <button class="chip" data-s="mf">メートル細目</button>
+      <button class="chip" data-s="mini">ミニチュア(JIS外)</button>
+      <button class="chip" data-s="w">ウイット W</button>
+      <button class="chip" data-s="g">管用平行 G(PF)</button>
+      <button class="chip" data-s="r">管用テーパ R/Rc(PT)</button>
     </div>
   </div>
 
@@ -369,7 +399,8 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
     <div class="picker-head">
       <span style="font-size:.8rem;color:var(--ink-dim);font-weight:600;letter-spacing:.08em">収録サイズ</span>
       <div class="range-toggle" id="screwChoice">
-        <button data-c="1" class="on">第1選択</button>
+        <button data-c="1" class="on">よく使う</button>
+        <button data-c="3">JIS</button>
         <button data-c="9">すべて</button>
       </div>
     </div>
@@ -390,6 +421,11 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
     <p class="note" id="screwNote"></p>
   </div>
 
+  <div class="card dia-card">
+    <div class="dia-head"><h2 style="margin:0">ねじ山の断面図</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+    <div class="dia-body"><svg id="screwPicSvg" class="dia-svg" viewBox="0 0 360 220" width="100%"></svg></div>
+  </div>
+
   <div class="card" id="screwTapCard">
     <h2>タップ下穴（ひっかかり率で調整）</h2>
     <div class="seg" id="screwEngage">
@@ -401,6 +437,7 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
     </div>
     <div class="spec-list" id="screwDrill" style="margin-top:10px"></div>
     <p class="note">下穴径 = 呼び径 − 1.299 × ピッチ × (ひっかかり率/100)。<b>75%が一般用途の標準</b>で、慣用の「呼び径−ピッチ」とほぼ同じ値になります。アルミ・鋳鉄など脆い材料や、タップ折れを避けたいときは60〜70%に下げます。ステンレスは食い付き負荷が高いため下げ目が無難です。<b>タップメーカーの推奨下穴表がある場合はそちらを優先してください。</b></p>
+    <button class="copy-btn" onclick="copyScreenResult('screw',this)">📋 結果をコピー</button>
   </div>
 
 </main>
@@ -429,11 +466,11 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
         </div>
         <div class="t-field" data-key="adj">
           <div class="lab"><span>底辺 X（水平）</span><span>mm</span></div>
-          <input class="num" type="text" inputmode="decimal" placeholder="—"><button class="clr">✕</button>
+          <input class="num" type="text" inputmode="decimal" placeholder="—" value="100"><button class="clr">✕</button>
         </div>
         <div class="t-field" data-key="opp">
           <div class="lab"><span>高さ Y（垂直）</span><span>mm</span></div>
-          <input class="num" type="text" inputmode="decimal" placeholder="—"><button class="clr">✕</button>
+          <input class="num" type="text" inputmode="decimal" placeholder="—" value="30"><button class="clr">✕</button>
         </div>
       </div>
       <div class="hchips">
@@ -441,10 +478,11 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
         <button class="chip" id="triClear">クリア</button>
       </div>
     </div>
-    <div class="card">
-      <h2>ビジュアル確認</h2>
-      <div class="trig-svg-wrap"><svg id="triSvg" viewBox="0 0 360 230" width="100%"></svg></div>
+    <div class="card dia-card">
+      <div class="dia-head"><h2 style="margin:0">ビジュアル確認</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+      <div class="dia-body"><svg id="triSvg" class="dia-svg" viewBox="0 0 360 230" width="100%"></svg></div>
       <div class="formula" id="triFormula">2つの値を入力してください。<br>例）傾ける角度 θ = arctan(Y/X)、切込み x = L·sinθ</div>
+      <button class="copy-btn" onclick="copyScreenResult('trig',this)">📋 結果をコピー</button>
     </div>
   </div>
 
@@ -460,10 +498,11 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
           <input class="num" type="text" inputmode="decimal" value="50"></div>
       </div>
     </div>
-    <div class="card">
-      <h2>結果</h2>
-      <div class="trig-svg-wrap"><svg id="taperSvg" viewBox="0 0 360 190" width="100%"></svg></div>
+    <div class="card dia-card">
+      <div class="dia-head"><h2 style="margin:0">結果</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+      <div class="dia-body"><svg id="taperSvg" class="dia-svg" viewBox="0 0 360 190" width="100%"></svg></div>
       <div class="formula" id="taperOut"></div>
+      <button class="copy-btn" onclick="copyScreenResult('taper',this)">📋 結果をコピー</button>
     </div>
   </div>
 
@@ -521,12 +560,18 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
       </div>
     </div>
 
+    <div class="card dia-card">
+      <div class="dia-head"><h2 style="margin:0">断面図</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+      <div class="dia-body"><svg id="boltPicSvg" class="dia-svg" viewBox="0 0 360 230" width="100%"></svg></div>
+    </div>
+
     <div class="card">
       <h2>計算結果</h2>
       <div class="spec-list" id="boltOut"></div>
       <div id="boltWarn"></div>
       <p class="note" id="boltNote"></p>
       <div class="disc">参考値です。実設計は必ず規格原典で検証し、有資格者の確認を受けてください。本アプリの計算結果に起因する損害について責任を負いません。</div>
+      <button class="copy-btn" onclick="copyScreenResult('strength',this)">📋 結果をコピー</button>
     </div>
   </div>
 
@@ -573,12 +618,18 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
       </div>
     </div>
 
+    <div class="card dia-card">
+      <div class="dia-head"><h2 style="margin:0">軸の図解</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+      <div class="dia-body"><svg id="shaftPicSvg" class="dia-svg" viewBox="0 0 360 220" width="100%"></svg></div>
+    </div>
+
     <div class="card">
       <h2>計算結果</h2>
       <div class="spec-list" id="shaftOut"></div>
       <div id="shaftWarn"></div>
       <p class="note" id="shaftNote"></p>
       <div class="disc">参考値です。実設計は必ず規格原典で検証し、有資格者の確認を受けてください。本アプリの計算結果に起因する損害について責任を負いません。</div>
+      <button class="copy-btn" onclick="copyScreenResult('strength',this)">📋 結果をコピー</button>
     </div>
   </div>
 
@@ -669,11 +720,17 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
     </div>
   </div>
 
+  <div class="card dia-card">
+    <div class="dia-head"><h2 style="margin:0">加工の図解</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+    <div class="dia-body"><svg id="cutPicSvg" class="dia-svg" viewBox="0 0 360 220" width="100%"></svg></div>
+  </div>
+
   <div class="card">
     <h2>計算結果</h2>
     <div class="spec-list" id="cutOut"></div>
     <div id="cutWarn"></div>
     <p class="note" id="cutNote"></p>
+    <button class="copy-btn" onclick="copyScreenResult('cut',this)">📋 結果をコピー</button>
   </div>
 
 </main>
@@ -734,6 +791,11 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
     <p class="note">断面性能は公称寸法（JIS G 3192 / G 3466 / G 3444 の呼称）から計算した<b>参考値</b>です。隅Rを無視しているため、H形鋼・溝形鋼は規格表よりわずかに小さめ（安全側）、山形鋼・鋼管は数%の差が出ます。判定が際どい場合は規格表の値で再確認してください。</p>
   </div>
 
+  <div class="card dia-card">
+    <div class="dia-head"><h2 style="margin:0">断面の図解</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+    <div class="dia-body"><svg id="beamSecSvg" class="dia-svg" viewBox="0 0 360 220" width="100%"></svg></div>
+  </div>
+
   <div class="card">
     <h2>材料と安全率</h2>
     <div class="hchips" id="beamMats"></div>
@@ -768,12 +830,90 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
     </div>
   </div>
 
+  <div class="card dia-card">
+    <div class="dia-head"><h2 style="margin:0">支持条件・荷重の図解</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+    <div class="dia-body"><svg id="beamCaseSvg" class="dia-svg" viewBox="0 0 360 170" width="100%"></svg></div>
+  </div>
+
   <div class="card">
     <h2>計算結果</h2>
     <div class="spec-list" id="beamOut"></div>
     <div id="beamWarn"></div>
     <p class="note" id="beamNote"></p>
     <div class="disc">参考値です。建築物・吊り具など人身に関わる構造は建築基準法・クレーン等安全規則に基づく設計と有資格者の確認が必要です。本アプリの計算結果に起因する損害について責任を負いません。</div>
+    <button class="copy-btn" onclick="copyScreenResult('beam',this)">📋 結果をコピー</button>
+  </div>
+
+</main>
+
+<!-- ================= 台形加減速・タクトタイム ================= -->
+<main class="screen" id="screen-tact">
+
+  <div class="card">
+    <div class="seg" id="tactMode">
+      <button data-m="time" class="on">時間を計算</button>
+      <button data-m="reqV">最高速度を計算</button>
+      <button data-m="reqA">加減速度を計算</button>
+    </div>
+    <p class="note" style="margin-top:8px" id="tactModeNote"></p>
+  </div>
+
+  <div class="card">
+    <h2>移動条件</h2>
+    <div class="f-grid">
+      <div class="f-row f-full"><span class="lab">移動距離 L</span>
+        <div class="ipt"><input id="tcL" class="num" type="text" inputmode="decimal" value="200"><span class="u">mm</span></div></div>
+      <div class="f-row" id="tcVRow"><span class="lab">最高速度 V</span>
+        <div class="ipt"><input id="tcV" class="num" type="text" inputmode="decimal" value="300"><span class="u">mm/s</span></div></div>
+      <div class="f-row" id="tcTRow" style="display:none"><span class="lab">目標タクトタイム T</span>
+        <div class="ipt"><input id="tcT" class="num" type="text" inputmode="decimal" value="1.0"><span class="u">s</span></div></div>
+    </div>
+  </div>
+
+  <div class="card" id="tcAccelCard">
+    <h2>加減速度</h2>
+    <div class="seg sm" id="tcUnit">
+      <button data-u="g" class="on">G</button>
+      <button data-u="ms2">m/s²</button>
+    </div>
+    <div class="f-grid" style="margin-top:8px">
+      <div class="f-row"><span class="lab" id="tcALab">加速度 a</span>
+        <div class="ipt"><input id="tcA" class="num" type="text" inputmode="decimal" value="0.3"><span class="u" id="tcAU">G</span></div></div>
+      <div class="f-row" id="tcDRow" style="display:none"><span class="lab">減速度 d</span>
+        <div class="ipt"><input id="tcD" class="num" type="text" inputmode="decimal" value="0.3"><span class="u" id="tcDU">G</span></div></div>
+    </div>
+    <div class="seg sm" id="tcSameAD" style="margin-top:8px">
+      <button data-s="1" class="on">加速＝減速</button>
+      <button data-s="0">別々に指定</button>
+    </div>
+    <p class="note" id="tcAccelConv"></p>
+  </div>
+
+  <div class="card dia-card">
+    <div class="dia-head"><h2 style="margin:0">速度線図</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+    <div class="dia-body"><svg id="tactSvg" class="dia-svg" viewBox="0 0 360 200" width="100%"></svg></div>
+  </div>
+
+  <div class="card">
+    <h2>計算結果</h2>
+    <div class="spec-list" id="tactOut"></div>
+    <div id="tactWarn"></div>
+    <p class="note">台形（一定加速度）モデルの標準式による<b>参考値</b>です。S字加減速（ジャーク制限）には対応していません。実機の位置決め整定時間・サーボの応答遅れは含みません。</p>
+  </div>
+
+  <div class="card">
+    <h2>必要推力（アクチュエータ選定の目安）</h2>
+    <div class="f-grid">
+      <div class="f-row"><span class="lab">可搬質量 m</span>
+        <div class="ipt"><input id="tcMass" class="num" type="text" inputmode="decimal" value="2"><span class="u">kg</span></div></div>
+      <div class="f-row"><span class="lab">摩擦係数 μ</span>
+        <div class="ipt"><input id="tcMu" class="num" type="text" inputmode="decimal" value="0.1"><span class="u">—</span></div></div>
+      <div class="f-row f-full"><span class="lab">傾斜角 θ（水平=0°、垂直=90°）</span>
+        <div class="ipt"><input id="tcTheta" class="num" type="text" inputmode="decimal" value="0"><span class="u">°</span></div></div>
+    </div>
+    <div class="spec-list" id="tactForceOut" style="margin-top:10px"></div>
+    <p class="note">F = m(a + μg・cosθ + g・sinθ)。垂直軸（θ=90°）では摩擦項は効かず自重 mg が常時のります。必要推力はカタログの定格推力に安全マージンを見て選定してください。</p>
+    <button class="copy-btn" onclick="copyScreenResult('tact',this)">📋 結果をコピー</button>
   </div>
 
 </main>
@@ -1025,6 +1165,83 @@ function parseNum(v){
   const n=parseFloat(v); return isNaN(n)?null:n;
 }
 
+/* =========================================================
+   図解（Phase 8）: JIS Z 8317 準拠の寸法線パーツ
+   ========================================================= */
+const DIA_ARROW={
+  right:(x,y)=>`${x},${y} ${x-7},${y-3} ${x-7},${y+3}`,
+  left: (x,y)=>`${x},${y} ${x+7},${y-3} ${x+7},${y+3}`,
+  down: (x,y)=>`${x},${y} ${x-3},${y-7} ${x+3},${y-7}`,
+  up:   (x,y)=>`${x},${y} ${x-3},${y+7} ${x+3},${y+7}`,
+};
+function diaArrow(dir,x,y){return `<polygon points="${DIA_ARROW[dir](x,y)}" fill="var(--ink-dim)"/>`;}
+function dimH(x1,x2,y,label,opts={}){
+  const {ext1=y,ext2=y,above=true,color}=opts;
+  const ty=y+(above?-6:15);
+  const valCls=color?"":"dia-val";
+  const style=color?` style="fill:${color}"`:"";
+  return `<line class="dia-ext" x1="${x1}" y1="${ext1}" x2="${x1}" y2="${y}"/>`+
+    `<line class="dia-ext" x1="${x2}" y1="${ext2}" x2="${x2}" y2="${y}"/>`+
+    `<line class="dia-dim" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/>`+
+    diaArrow("right",x1,y)+diaArrow("left",x2,y)+
+    `<text class="${valCls}"${style} x="${(x1+x2)/2}" y="${ty}" font-size="12" text-anchor="middle">${label}</text>`;
+}
+function dimV(x,y1,y2,label,opts={}){
+  const {ext1=x,ext2=x,right=true,color}=opts;
+  const tx=x+(right?9:-9);
+  const valCls=color?"":"dia-val";
+  const style=color?` style="fill:${color}"`:"";
+  return `<line class="dia-ext" x1="${ext1}" y1="${y1}" x2="${x}" y2="${y1}"/>`+
+    `<line class="dia-ext" x1="${ext2}" y1="${y2}" x2="${x}" y2="${y2}"/>`+
+    `<line class="dia-dim" x1="${x}" y1="${y1}" x2="${x}" y2="${y2}"/>`+
+    diaArrow("down",x,y1)+diaArrow("up",x,y2)+
+    `<text class="${valCls}"${style} x="${tx}" y="${(y1+y2)/2+4}" font-size="12" text-anchor="${right?"start":"end"}">${label}</text>`;
+}
+function diaLeader(x1,y1,x2,y2,label,anchor){
+  return `<line class="dia-ext" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`+
+    `<circle cx="${x1}" cy="${y1}" r="2" fill="var(--ink-dim)"/>`+
+    `<text class="dia-lab" x="${x2+(anchor==="end"?-6:6)}" y="${y2+4}" font-size="11.5" text-anchor="${anchor||"start"}">${label}</text>`;
+}
+/* =========================================================
+   結果コピー: 他AIへのファクトチェック用プロンプトとして貼れる
+   プレーンテキストを生成しクリップボードへコピー
+   ========================================================= */
+const LAST={};
+function fallbackCopy(text,done){
+  const ta=document.createElement("textarea");
+  ta.value=text;ta.style.position="fixed";ta.style.opacity="0";ta.style.top="0";ta.style.left="0";
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand("copy");}catch(e){}
+  document.body.removeChild(ta);done();
+}
+function copyText(text,btn){
+  const done=()=>{
+    if(!btn)return;
+    const orig=btn.dataset.label||(btn.dataset.label=btn.textContent);
+    btn.textContent="✓ コピーしました";btn.classList.add("done");
+    clearTimeout(btn._t);btn._t=setTimeout(()=>{btn.textContent=orig;btn.classList.remove("done");},1800);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+  }else fallbackCopy(text,done);
+}
+function copyScreenResult(screen,btn){
+  const L=LAST[screen];if(!L){return;}
+  const text="【Mech Gauge】"+L.title+"\n"+"-".repeat(28)+"\n"+L.lines.join("\n")+"\n"+"-".repeat(28)+
+    "\n※ Mech Gaugeアプリの計算結果（参考値）。JIS規格・材料力学の一次情報に基づき、この計算が正しいかファクトチェックしてください。";
+  copyText(text,btn);
+}
+function initDiaToggles(){
+  document.querySelectorAll(".dia-toggle").forEach(btn=>{
+    if(btn.dataset.bound)return;btn.dataset.bound="1";
+    btn.addEventListener("click",()=>{
+      const card=btn.closest(".dia-card");
+      card.classList.toggle("collapsed");
+      btn.textContent=card.classList.contains("collapsed")?"▼ 図を見る":"▲ 図を閉じる";
+    });
+  });
+}
+
 /* ========================================================= ホイールピッカー ========================================================= */
 const ITEM_H=56;
 function makeWheel(el,items,selectedValue,onChange){
@@ -1133,9 +1350,19 @@ function render(){
    '<div class="limit-box shaft"><div class="lab">軸 '+state.shaft.letter.toLowerCase()+state.shaft.grade+'</div>'+
    '<div class="dev num">es '+fmt(s.es)+' / ei '+fmt(s.ei)+' μm</div>'+
    '<div class="dim num">'+mm(D,s.ei)+'<br>〜 '+mm(D,s.es)+'</div></div>';
-  drawZones(h,s);drawVerdict(h,s);
+  drawZones(h,s);drawVerdict(h,s);drawFitPicture(D,h,s);
   const maxC=h.ES-s.ei,minC=h.EI-s.es;
   const kind=minC>=0?"すきまばめ":(maxC<=0?"しまりばめ":"中間ばめ");
+  LAST.fit={title:"はめあい公差　φ"+D+"　"+state.hole.letter+state.hole.grade+" / "+state.shaft.letter.toLowerCase()+state.shaft.grade,
+    lines:[
+      "呼び径: φ"+D+" mm",
+      "穴 "+state.hole.letter+state.hole.grade+": ES "+fmt(h.ES)+" / EI "+fmt(h.EI)+" μm　（"+mm(D,h.EI)+" 〜 "+mm(D,h.ES)+" mm）",
+      "軸 "+state.shaft.letter.toLowerCase()+state.shaft.grade+": es "+fmt(s.es)+" / ei "+fmt(s.ei)+" μm　（"+mm(D,s.ei)+" 〜 "+mm(D,s.es)+" mm）",
+      "ばめの種類: "+kind,
+      "最大（穴max−軸min）: "+(maxC>=0?"すきま ":"しめしろ ")+Math.abs(maxC).toFixed(1)+" μm",
+      "最小（穴min−軸max）: "+(minC>=0?"すきま ":"しめしろ ")+Math.abs(minC).toFixed(1)+" μm",
+      "根拠: ISO 286-1 / JIS B 0401"
+    ]};
   pushHistory({s:"fit",
     t:"φ"+D+" "+state.hole.letter+state.hole.grade+" / "+state.shaft.letter.toLowerCase()+state.shaft.grade,
     d:kind+"　最大"+maxC.toFixed(1)+" / 最小"+minC.toFixed(1)+" μm",
@@ -1148,6 +1375,28 @@ RESTORE.fit=st=>{
   state.nominal=st.n;$("#nominal").value=st.n;
   buildFitWheels();render();
 };
+function drawFitPicture(D,h,s){
+  const svg=$("#fitPicSvg"),W=360,H=210,cx=150,cy=98,R=58;
+  const maxC=h.ES-s.ei,minC=h.EI-s.es;
+  const clear=minC>=0,press=maxC<=0;
+  const gapPx=clear?9:(press?-6:2); // 誇張表示（実寸ではなく模式図）。すきま=軸を小さく、しめしろ=軸が穴にはみ出す
+  const rS=Math.max(8,R-gapPx);
+  let g='';
+  g+=`<rect x="${cx-R-34}" y="${cy-R-34}" width="${(R+34)*2}" height="${(R+34)*2}" rx="12" fill="var(--panel2)"/>`;
+  g+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--hole)" stroke-width="2.5"/>`;
+  g+=`<circle cx="${cx}" cy="${cy}" r="${rS}" fill="var(--shaft-dim)" stroke="var(--shaft)" stroke-width="2.5"/>`;
+  g+=`<line x1="${cx}" y1="${cy-R-10}" x2="${cx}" y2="${cy+R+10}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="2 3"/>`;
+  g+=`<line x1="${cx-R-10}" y1="${cy}" x2="${cx+R+10}" y2="${cy}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="2 3"/>`;
+  g+=dimH(cx-R,cx+R,cy-R-18,"φ"+D+"（呼び径）",{ext1:cy-R,ext2:cy-R,above:true});
+  g+=`<text x="${cx}" y="${cy-6}" fill="var(--hole)" font-size="12.5" font-weight="700" text-anchor="middle">穴 ${state.hole.letter}${state.hole.grade}</text>`;
+  g+=`<text x="${cx}" y="${cy+14}" fill="var(--shaft)" font-size="12.5" font-weight="700" text-anchor="middle">軸 ${state.shaft.letter.toLowerCase()}${state.shaft.grade}</text>`;
+  const lx=cx+rS+6,ly=cy-R*0.55;
+  g+=diaLeader(cx+Math.min(R,rS)*Math.cos(-0.95),cy+Math.min(R,rS)*Math.sin(-0.95),lx+40,ly,
+    clear?"すきま 最大"+maxC.toFixed(1)+" / 最小"+minC.toFixed(1)+" μm":
+    press?"しめしろ 最大"+Math.abs(minC).toFixed(1)+" / 最小"+Math.abs(maxC).toFixed(1)+" μm":
+    "中間ばめ（条件により すきま⇔しめしろ）","start");
+  svg.innerHTML=g;
+}
 function drawZones(h,s){
   const svg=$("#zoneSvg"),W=360,H=180,zeroY=H/2,plotL=64,plotR=332;
   const maxAbs=Math.max(Math.abs(h.ES),Math.abs(h.EI),Math.abs(s.es),Math.abs(s.ei),1);
@@ -1207,15 +1456,27 @@ const SCREW_DATA={
    hexKey:{"M1.6":1.5,M2:1.5,"M2.5":2,M3:2.5,M4:3,M5:4,M6:5,M8:6,M10:8,M12:10,M14:12,M16:14,
         M18:14,M20:17,M22:17,M24:19,M27:19,M30:22,M33:24,M36:27,M42:32,M48:36},
    note:"二面幅はJIS B 1002小形系列等で異なる場合あり（M10=17、M12=19等の旧規格・メーカー品に注意）。"},
- mf:{name:"メートル細目（JIS B 0207）",angle:60,list:[
-   ["M8×1",8,1],["M10×1.25",10,1.25],["M10×1",10,1],["M12×1.5",12,1.5],["M12×1.25",12,1.25],
-   ["M14×1.5",14,1.5],["M16×1.5",16,1.5],["M18×1.5",18,1.5],["M20×1.5",20,1.5],["M20×2",20,2],
-   ["M22×1.5",22,1.5],["M24×2",24,2],["M27×2",27,2],["M30×2",30,2],["M33×2",33,2],["M36×3",36,3]],
-   note:"下穴 ≈ 呼び径 − ピッチ。"},
+ mf:{name:"メートル細目（JIS B 0207）",angle:60,choice:true,list:[
+   // 第4要素 = よく使う度（1=よく使う、2=規格内だが小径・特殊用途向け）。JIS B0207の規格範囲内はすべて含むため
+   // 「JIS」「すべて」は同一集合になる（無理に区別しない）
+   ["M1×0.2",1,0.2,2],["M1.1×0.2",1.1,0.2,2],["M1.2×0.2",1.2,0.2,2],["M1.4×0.2",1.4,0.2,2],
+   ["M1.6×0.2",1.6,0.2,2],["M1.8×0.2",1.8,0.2,2],["M2×0.25",2,0.25,2],["M2.5×0.35",2.5,0.35,2],
+   ["M3×0.35",3,0.35,2],["M3.5×0.35",3.5,0.35,2],["M4×0.5",4,0.5,2],["M4.5×0.5",4.5,0.5,2],
+   ["M5×0.5",5,0.5,2],["M5.5×0.5",5.5,0.5,2],["M6×0.75",6,0.75,2],["M6×0.5",6,0.5,2],
+   ["M7×0.75",7,0.75,2],
+   ["M8×1",8,1,1],["M8×0.75",8,0.75,2],["M10×1.25",10,1.25,1],["M10×1",10,1,1],["M12×1.5",12,1.5,1],["M12×1.25",12,1.25,1],
+   ["M14×1.5",14,1.5,1],["M16×1.5",16,1.5,1],["M18×1.5",18,1.5,1],["M20×1.5",20,1.5,1],["M20×2",20,2,1],
+   ["M22×1.5",22,1.5,1],["M24×2",24,2,1],["M27×2",27,2,1],["M30×2",30,2,1],["M33×2",33,2,1],["M36×3",36,3,1]],
+   note:"下穴 ≈ 呼び径 − ピッチ。M6以下の細目は精密機器・光学機器用途が中心です。"},
+ mini:{name:"ミニチュアねじ S（JIS B 0201・JIS B 0205の規格外）",angle:60,list:[
+   ["S0.3",0.3,0.08],["S0.4",0.4,0.09],["S0.5",0.5,0.125],["S0.6",0.6,0.15],["S0.7",0.7,0.175],
+   ["S0.8",0.8,0.2],["S0.9",0.9,0.225],["S1.0",1.0,0.25],["S1.1",1.1,0.25],["S1.2",1.2,0.25],["S1.4",1.4,0.3]],
+   note:"時計・眼鏡・光学機器・精密機器用の極小ねじ。JIS B 0205（メートル並目、最小M1）には含まれない独立規格のため「JIS外」として分類しています。S0.8はメートル並目画面のM0.8と同一諸元です。"},
  w:{name:"ウイットねじ W（JIS B 0206）",angle:55,list:[
+   ["W1/16",1.5875,60],["W3/32",2.381,48],
    ["W1/8",3.175,40],["W3/16",4.762,24],["W1/4",6.35,20],["W5/16",7.938,18],["W3/8",9.525,16],
    ["W7/16",11.112,14],["W1/2",12.7,12],["W5/8",15.876,11],["W3/4",19.05,10],["W7/8",22.225,9],["W1",25.4,8]],
-   tpi:true,note:"ピッチ = 25.4 ÷ 山数/インチ。下穴 ≈ 呼び径 − ピッチ。建築・足場・旧設備の補修で現役。"},
+   tpi:true,note:"ピッチ = 25.4 ÷ 山数/インチ。下穴 ≈ 呼び径 − ピッチ。建築・足場・旧設備の補修で現役。W1/16・W3/32は入手性が低いマイナーサイズです。"},
  g:{name:"管用平行ねじ G / PF（JIS B 0202）",angle:55,list:[
    ["G1/8",9.728,28],["G1/4",13.157,19],["G3/8",16.662,19],["G1/2",20.955,14],["G5/8",22.911,14],
    ["G3/4",26.441,14],["G1",33.249,11],["G1 1/4",41.910,11],["G1 1/2",47.803,11],["G2",59.614,11]],
@@ -1235,8 +1496,11 @@ function nearestDrill(v){const step=v<3?0.05:0.1;return (Math.round(v/step)*step
 let screwState={series:"mc",name:"M6",choice:1,engage:75};
 function screwList(){
   const S=SCREW_DATA[screwState.series];
-  if(!S.choice||screwState.choice>=9)return S.list;
-  return S.list.filter(r=>r[3]===1||r[3]===0); // 第1選択＋規格範囲外(M0.8)
+  if(!S.choice)return S.list;
+  const c=screwState.choice;
+  if(c>=9)return S.list; // すべて（JIS外・マイナー規格も含む全収録）
+  if(c>=3)return S.list.filter(r=>r[3]>=1); // JIS（第1〜第3選択、規格範囲内のみ）
+  return S.list.filter(r=>r[3]===1||r[3]===0); // よく使う（第1選択＋現場で使うM0.8）
 }
 function screwRow(){
   const list=screwList();
@@ -1284,15 +1548,19 @@ function renderScrew(){
   $("#screwName").textContent=name;
   $("#screwSpecs").innerHTML=html;
 
-  // 規格範囲外サイズの注記
+  // 規格範囲外サイズの注記（メートル並目・細目のみ対象。選択度の意味が系列で異なるため分岐する）
   const warn=$("#screwWarn");
-  if(row[3]===0){
+  if(screwState.series==="mc"&&row[3]===0){
     warn.innerHTML='<div class="warn">⚠ <b>M0.8はJIS B 0205（メートルねじ 一般用）の規格範囲外</b>です（規格の最小はM1）。'+
       '呼び径0.8mmのねじは<b>JIS B 0201「ミニチュアねじ」のS0.8（ピッチ0.2）</b>に該当し、'+
       '時計・眼鏡・精密機器用として規定されています。ここでの諸元はS0.8として計算しています。</div>';
-  }else if(row[3]===2||row[3]===3){
+  }else if(screwState.series==="mc"&&(row[3]===2||row[3]===3)){
     warn.innerHTML='<div class="warn">ℹ このサイズはJIS B 0205の<b>第'+row[3]+'選択</b>です。'+
       '入手性が第1選択より劣るため、新規設計ではなるべく第1選択（M3・M4・M5・M6・M8・M10・M12…）を使ってください。</div>';
+  }else if(screwState.series==="mf"&&row[3]===2){
+    warn.innerHTML='<div class="warn">ℹ M6以下の細目は精密機器・光学機器向けの小径サイズです。入手性が劣るため、一般用途ではM8×1以上を推奨します。</div>';
+  }else if(screwState.series==="mini"){
+    warn.innerHTML='<div class="warn">ℹ <b>ミニチュアねじ（JIS B 0201）</b>はJIS B 0205（メートル並目）とは別規格です。時計・眼鏡・光学・精密機器用の極小ねじで、一般的な工業用タップ・ダイスでは対応できない場合があります。</div>';
   }else warn.innerHTML="";
 
   // タップ下穴カード
@@ -1316,10 +1584,51 @@ function renderScrew(){
   tap.style.display="";
 
   $("#screwNote").innerHTML="※ "+S.name+"。"+S.note+" いずれも<b>参考値</b>です。";
+  drawScrewPicture(d,d2,d1,P,S.angle,drill);
+  LAST.screw={title:"ねじ諸元　"+name+"（"+S.name+"）",
+    lines:[
+      "外径（基準）d: "+r3(d)+" mm",
+      (S.tpi?"山数: "+tpiTxt+"（ピッチ換算 "+r3(P)+" mm）":"ピッチ P: "+P+" mm"),
+      "有効径 d2: "+r3(d2)+" mm",
+      "谷径 d1: "+r3(d1)+" mm",
+      "ねじ山角度: "+S.angle+"°",
+      (fixedDrill!=null?"規定の下穴（Rc用）: "+drill.toFixed(1)+" mm":
+        "タップ下穴（ひっかかり率"+screwState.engage+"%）: "+drill.toFixed(3)+" mm　（推奨ドリル径 "+nearestDrill(drill)+" mm）"),
+      (S.hex&&S.hex[name]?"六角二面幅: "+S.hex[name]+" mm":null),
+      (S.hexKey&&S.hexKey[name]?"六角穴レンチ: "+S.hexKey[name]+" mm":null),
+      "根拠: "+S.name
+    ].filter(Boolean)};
   pushHistory({s:"screw",t:name,
     d:S.name+"　下穴 "+(fixedDrill!=null?drill.toFixed(1):nearestDrill(drill))+" mm"+
       (fixedDrill!=null?"":"（ひっかかり率"+screwState.engage+"%）")+" ／ 有効径 "+r3(d2)+" mm",
     st:{series:screwState.series,name:name,choice:screwState.choice,engage:screwState.engage}});
+}
+function drawScrewPicture(d,d2,d1,P,angle,drill){
+  const svg=$("#screwPicSvg"),yCrest=54,yRoot=134,yDrill=158,x0=46,pitchPx=76,n=2;
+  const xEnd=x0+pitchPx*n;
+  let pts=`${x0},${yCrest} `;
+  for(let i=0;i<n;i++){
+    const xp=x0+pitchPx*i;
+    pts+=`${xp+pitchPx*0.5},${yRoot} ${xp+pitchPx},${yCrest} `;
+  }
+  const yMid=(yCrest+yRoot)/2;
+  let g='';
+  g+=`<polyline points="${pts}" fill="none" stroke="var(--screw)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  g+=`<line x1="${x0}" y1="${yCrest}" x2="${xEnd}" y2="${yCrest}" stroke="var(--screw)" stroke-width="1" stroke-dasharray="2 3" opacity=".5"/>`;
+  g+=`<line x1="${x0}" y1="${yRoot}" x2="${xEnd}" y2="${yRoot}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="2 3"/>`;
+  g+=`<line x1="${x0}" y1="${yMid}" x2="${xEnd}" y2="${yMid}" stroke="var(--accent)" stroke-width="1" stroke-dasharray="5 3" opacity=".7"/>`;
+  g+=`<line x1="${x0}" y1="${yDrill}" x2="${xEnd}" y2="${yDrill}" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="6 3"/>`;
+  g+=dimV(24,yCrest,yRoot,"山高さ",{ext1:xEnd+30,ext2:xEnd+30,right:false});
+  g+=dimH(x0,x0+pitchPx,yCrest-22,"P "+P.toFixed(3)+" mm",{above:true});
+  g+=`<text class="dia-lab" x="${xEnd+10}" y="${yCrest+4}" font-size="12" fill="var(--screw)">d = ${d.toFixed(3)} mm（外径）</text>`;
+  g+=`<text class="dia-lab" x="${xEnd+10}" y="${yMid+4}" font-size="12" fill="var(--accent)">d2 = ${d2.toFixed(3)} mm（有効径）</text>`;
+  g+=`<text class="dia-lab" x="${xEnd+10}" y="${yRoot+4}" font-size="12">d1 = ${d1.toFixed(3)} mm（谷径）</text>`;
+  g+=`<text class="dia-lab" x="${xEnd+10}" y="${yDrill+4}" font-size="12" fill="var(--ok)">下穴 ≈ ${drill.toFixed(2)} mm</text>`;
+  const apexX=x0+pitchPx*0.5,apexY=yRoot,half=angle/2,armR=30;
+  const a1=(-90-half)*Math.PI/180,a2=(-90+half)*Math.PI/180;
+  g+=`<path d="M ${apexX+armR*Math.cos(a1)} ${apexY+armR*Math.sin(a1)} A ${armR} ${armR} 0 0 1 ${apexX+armR*Math.cos(a2)} ${apexY+armR*Math.sin(a2)}" fill="none" stroke="var(--ok)" stroke-width="1.5"/>`;
+  g+=`<text class="dia-lab" x="${apexX}" y="${apexY-38}" font-size="12" fill="var(--ok)" text-anchor="middle">山の角度 ${angle}°</text>`;
+  svg.innerHTML=g;
 }
 RESTORE.screw=st=>{
   if(!st||!SCREW_DATA[st.series])return;
@@ -1354,8 +1663,8 @@ $("#screwEngage").querySelectorAll("button").forEach(b=>{
 });
 
 /* ========================================================= 三角関数 ========================================================= */
-const T={theta:null,adj:null,opp:null,hyp:null};
-let editedOrder=[];
+const T={theta:null,adj:100,opp:30,hyp:null};
+let editedOrder=["adj","opp"];
 const tFields=[...document.querySelectorAll("#triPanel .t-field")];
 tFields.forEach(f=>{
   const key=f.dataset.key,inp=f.querySelector("input");
@@ -1431,6 +1740,9 @@ function solveTri(){
   $("#triFormula").innerHTML=formula;
   drawTri((R.adj&&R.opp)?R:null);
   if(R.theta!=null&&R.adj!=null&&R.opp!=null){
+    LAST.trig={title:"直角三角形　θ"+rnd(R.theta)+"°",
+      lines:["角度 θ: "+rnd(R.theta)+"°","底辺 X: "+rnd(R.adj)+" mm","高さ Y: "+rnd(R.opp)+" mm",
+        "斜辺 L: "+rnd(R.hyp)+" mm","もう一方の角: "+rnd(90-R.theta)+"°","根拠: 三角関数の基本式"]};
     pushHistory({s:"trig",t:"θ "+rnd(R.theta)+"°",
       d:"底辺 X "+rnd(R.adj)+" ／ 高さ Y "+rnd(R.opp)+" ／ 斜辺 L "+rnd(R.hyp),
       st:{order:editedOrder.slice(),vals:{theta:T.theta,adj:T.adj,opp:T.opp,hyp:T.hyp}}});
@@ -1457,14 +1769,15 @@ function drawTri(R){
   const arcR=Math.min(42,R.adj*sc*0.5);
   const th=d2r(R.theta);
   const ax=bx+arcR*Math.cos(th),ay=by-arcR*Math.sin(th);
-  svg.innerHTML=
-   '<polygon points="'+bx+","+by+" "+x2+","+by+" "+x2+","+y2+'" fill="rgba(79,195,247,.08)" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>'+
-   '<path d="M '+(bx+arcR)+" "+by+" A "+arcR+" "+arcR+" 0 0 0 "+ax+" "+ay+'" fill="none" stroke="var(--ok)" stroke-width="2"/>'+
-   '<rect x="'+(x2-15)+'" y="'+(by-15)+'" width="15" height="15" fill="none" stroke="#5B6B7C" stroke-width="1.5"/>'+
-   '<text x="'+(bx+arcR+6)+'" y="'+(by-8)+'" fill="var(--ok)" font-size="13.5" font-weight="700">θ='+rnd(R.theta,2)+"°</text>"+
-   '<text x="'+((bx+x2)/2)+'" y="'+(by+20)+'" fill="var(--ink)" font-size="13.5" text-anchor="middle">X='+rnd(R.adj)+"</text>"+
-   '<text x="'+(x2+8)+'" y="'+((by+y2)/2)+'" fill="var(--ink)" font-size="13.5">Y='+rnd(R.opp)+"</text>"+
-   '<text x="'+((bx+x2)/2-12)+'" y="'+((by+y2)/2-10)+'" fill="var(--shaft)" font-size="13.5" text-anchor="end">L='+rnd(R.hyp)+"</text>";
+  let g='';
+  g+='<polygon points="'+bx+","+by+" "+x2+","+by+" "+x2+","+y2+'" fill="rgba(79,195,247,.08)" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>';
+  g+='<path d="M '+(bx+arcR)+" "+by+" A "+arcR+" "+arcR+" 0 0 0 "+ax+" "+ay+'" fill="none" stroke="var(--ok)" stroke-width="2"/>';
+  g+='<rect x="'+(x2-15)+'" y="'+(by-15)+'" width="15" height="15" fill="none" stroke="#5B6B7C" stroke-width="1.5"/>';
+  g+='<text x="'+(bx+arcR+6)+'" y="'+(by-8)+'" fill="var(--ok)" font-size="13.5" font-weight="700">θ='+rnd(R.theta,2)+"°</text>";
+  g+=dimH(bx,x2,by+24,"X="+rnd(R.adj)+" mm",{ext1:by,ext2:by,above:false});
+  g+=dimV(x2+22,y2,by,"Y="+rnd(R.opp)+" mm",{ext1:x2,ext2:x2,right:true});
+  g+='<text x="'+((bx+x2)/2-12)+'" y="'+((by+y2)/2-10)+'" fill="var(--shaft)" font-size="13.5" text-anchor="end">L='+rnd(R.hyp)+"</text>";
+  svg.innerHTML=g;
 }
 const TP={D:30,d:20,L:50};
 document.querySelectorAll("#taperPanel .t-field input").forEach(inp=>{
@@ -1484,13 +1797,18 @@ function solveTaper(){
   const sc=Math.min((W-pad*2)/L,(H-pad*2)/D);
   const cx=W/2,cy=H/2,l=L*sc,rD=D*sc/2,rd=d*sc/2;
   const x1=cx-l/2,x2=cx+l/2;
-  svg.innerHTML=
-   '<polygon points="'+x1+","+(cy-rD)+" "+x2+","+(cy-rd)+" "+x2+","+(cy+rd)+" "+x1+","+(cy+rD)+'" fill="rgba(255,183,77,.1)" stroke="var(--shaft)" stroke-width="2.5" stroke-linejoin="round"/>'+
-   '<line x1="'+(x1-8)+'" y1="'+cy+'" x2="'+(x2+8)+'" y2="'+cy+'" stroke="#5B6B7C" stroke-width="1" stroke-dasharray="6 4"/>'+
-   '<text x="'+(x1-6)+'" y="'+(cy-rD-8)+'" fill="var(--ink)" font-size="13">D='+TP.D+"</text>"+
-   '<text x="'+(x2+6)+'" y="'+(cy-rd-8)+'" fill="var(--ink)" font-size="13" text-anchor="end">d='+TP.d+"</text>"+
-   '<text x="'+cx+'" y="'+(cy+rD+20)+'" fill="var(--ink)" font-size="13" text-anchor="middle">L='+TP.L+"</text>"+
-   '<text x="'+cx+'" y="'+(cy-rD-12)+'" fill="var(--ok)" font-size="13" text-anchor="middle">片角 '+rnd(half,2)+"°</text>";
+  let g='';
+  g+='<polygon points="'+x1+","+(cy-rD)+" "+x2+","+(cy-rd)+" "+x2+","+(cy+rd)+" "+x1+","+(cy+rD)+'" fill="rgba(255,183,77,.1)" stroke="var(--shaft)" stroke-width="2.5" stroke-linejoin="round"/>';
+  g+='<line x1="'+(x1-8)+'" y1="'+cy+'" x2="'+(x2+8)+'" y2="'+cy+'" stroke="#5B6B7C" stroke-width="1" stroke-dasharray="6 4"/>';
+  g+='<text x="'+cx+'" y="'+(cy-rD-14)+'" fill="var(--ok)" font-size="13" text-anchor="middle">片角 '+rnd(half,2)+"°</text>";
+  g+=dimV(x1-22,cy-rD,cy+rD,"D="+TP.D+" mm",{ext1:x1,ext2:x1,right:false});
+  g+=dimV(x2+22,cy-rd,cy+rd,"d="+TP.d+" mm",{ext1:x2,ext2:x2,right:true});
+  g+=dimH(x1,x2,cy+rD+24,"L="+TP.L+" mm",{ext1:cy+rD,ext2:cy+rD,above:false});
+  svg.innerHTML=g;
+  LAST.taper={title:"テーパ　D"+TP.D+"×d"+TP.d+"×L"+TP.L,
+    lines:["大径 D: "+TP.D+" mm","小径 d: "+TP.d+" mm","テーパ部長さ L: "+TP.L+" mm",
+      "片角（刃物・心押し振り角）: "+rnd(half,3)+"°","テーパ全角: "+rnd(half*2,3)+"°",
+      "テーパ比: 1 : "+rnd(ratio,3)+"（(D−d)/L = "+rnd((D-d)/L,4)+"）","根拠: テーパの基本式"]};
 }
 document.querySelectorAll("#trigMode button").forEach(b=>{
   b.onclick=()=>{
@@ -1624,9 +1942,40 @@ function calcBolt(){
     "K は座面・ねじ面の摩擦で大きく変わり、実測との差が±30%程度出ることがあります。"+
     "許容荷重は耐力を安全率で割った値で、締付軸力とは別物です（締付軸力＝どこまで締めるか、許容荷重＝外から掛けてよい力）。";
 
+  drawBoltPicture(d,B.shear,Ff);
+  LAST.strength={title:"ボルト強度　"+B.name+" "+B.grade,
+    lines:["ねじの呼び: "+B.name+"　強度区分: "+B.grade,
+      "有効断面積 As: "+As.toFixed(1)+" mm²（JIS B 1082）",
+      "引張強さ Rm: "+g.Rm+" MPa／"+(g.ss?"0.2%耐力":"降伏点・耐力")+": "+g.Ry+" MPa",
+      "締付軸力 Ff: "+fN(Ff)+"（耐力の"+B.pre+"%／"+fKgf(Ff)+"）",
+      "締付トルク T: "+T.toFixed(1)+" N・m（K="+B.K+"）",
+      "締付時の相当応力: "+eq.toFixed(0)+" MPa（耐力比"+(eq/g.Ry*100).toFixed(0)+"%）",
+      "許容引張荷重: "+fN(Pa)+"（安全率"+S+"）",
+      "許容せん断荷重: "+fN(Va)+"（"+(B.shear==="thread"?"ねじ部 As":"円筒部 πd²/4")+"）",
+      "根拠: JIS B 1051 / B 1082 / B 1083"
+    ]};
   pushHistory({s:"strength",t:B.name+" "+B.grade,
     d:"締付軸力 "+fN(Ff)+" ／ 締付トルク "+T.toFixed(1)+" N·m（K="+B.K+"）",
     st:{mode:"bolt",sf:S,bolt:Object.assign({},B)}});
+}
+function drawBoltPicture(d,shear,Ff){
+  const svg=$("#boltPicSvg");if(!svg)return;
+  const cx=150,headTop=26,headH=28,headW=88,shankTop=headTop+headH,shankBot=196,shankW=Math.max(34,Math.min(56,d*1.6));
+  const threadTop=shankTop+(shankBot-shankTop)*0.42;
+  let g="";
+  g+=`<polygon points="${cx-headW/2},${shankTop} ${cx+headW/2},${shankTop} ${cx+headW/2-9},${headTop} ${cx-headW/2+9},${headTop}" fill="var(--panel2)" stroke="var(--ink-dim)" stroke-width="2"/>`;
+  g+=`<rect x="${cx-shankW/2}" y="${shankTop}" width="${shankW}" height="${shankBot-shankTop}" fill="rgba(179,157,255,.08)" stroke="var(--screw)" stroke-width="2.5"/>`;
+  for(let y=threadTop;y<shankBot-4;y+=8){
+    g+=`<line x1="${cx-shankW/2}" y1="${y}" x2="${cx+shankW/2}" y2="${y+5}" stroke="var(--screw)" stroke-width="1" opacity=".55"/>`;
+  }
+  const shearY=shear==="thread"?(threadTop+shankBot)/2:(shankTop+threadTop)/2;
+  g+=`<rect x="${cx-shankW/2-3}" y="${shearY-5}" width="${shankW+6}" height="10" fill="var(--ng)" opacity=".4"/>`;
+  g+=diaLeader(cx+shankW/2+3,shearY,cx+shankW/2+34,shearY-24,"せん断面（"+(shear==="thread"?"ねじ部 As":"円筒部 πd²/4")+"）");
+  g+=`<line x1="${cx}" y1="${headTop-24}" x2="${cx}" y2="${headTop-4}" stroke="var(--ok)" stroke-width="2"/>`+diaArrow("up",cx,headTop-24);
+  g+=`<line x1="${cx}" y1="${shankBot+4}" x2="${cx}" y2="${shankBot+24}" stroke="var(--ok)" stroke-width="2"/>`+diaArrow("down",cx,shankBot+24);
+  g+=`<text class="dia-lab" x="${cx+10}" y="${headTop-10}" font-size="12" fill="var(--ok)">締付軸力 Ff</text>`;
+  g+=dimV(cx-shankW/2-20,shankTop,shankBot,"d="+d.toFixed(2)+" mm",{ext1:cx-shankW/2,ext2:cx-shankW/2,right:false});
+  svg.innerHTML=g;
 }
 
 /* 必要な軸径を逆算する。
@@ -1701,9 +2050,49 @@ function calcShaft(){
     "曲げとねじりが同時に働く場合は相当曲げ <b>Me=(M+√(M²+T²))/2</b>、相当ねじり <b>Te=√(M²+T²)</b> で評価します。"+
     "キー溝ありは断面を0.75倍として扱う簡易評価です。応力集中（段付き・止め穴・溝）や疲労限度は考慮していません。";
 
+  drawShaftPicture(d,di,H.key,Tnm,H.M);
+  LAST.strength={title:"軸の強度　φ"+d+(di?"/φ"+di:"")+"　"+m.n,
+    lines:["形状: "+(H.shape==="hollow"?"中空丸軸（外径φ"+d+" / 内径φ"+di+"）":"中実丸軸（外径φ"+d+"）")+(H.key?"／キー溝あり(×0.75)":""),
+      "材料: "+m.n,
+      "断面係数 Z: "+Z.toFixed(0)+" mm³／極断面係数 Zp: "+Zp.toFixed(0)+" mm³",
+      "ねじりモーメント T: "+Tnm.toFixed(1)+" N・m",
+      (M>0?"曲げモーメント M: "+H.M+" N・m":null),
+      "相当曲げ応力 σe: "+sigE.toFixed(1)+" MPa／相当ねじり応力 τe: "+tauE.toFixed(1)+" MPa",
+      "許容曲げ応力 σa: "+siga.toFixed(1)+" MPa／許容せん断応力 τa: "+taua.toFixed(1)+" MPa（安全率"+Sef+"）",
+      "必要な軸径: φ"+dReq.toFixed(1)+" mm　→ "+(ok?"φ"+d+"で成立":"φ"+d+"では不足"),
+      "根拠: 材料力学（曲げ・ねじりの相当応力）"
+    ].filter(Boolean)};
   pushHistory({s:"strength",t:"φ"+d+(di?"/φ"+di:"")+" "+m.n,
     d:"T "+Tnm.toFixed(1)+" N·m ／ τe "+tauE.toFixed(1)+" MPa ／ 必要径 φ"+dReq.toFixed(1)+"　"+(ok?"成立":"不足"),
     st:{mode:"shaft",sf:S,shaft:Object.assign({},H)}});
+}
+function drawShaftPicture(d,di,key,Tnm,M){
+  const svg=$("#shaftPicSvg");if(!svg)return;
+  const cx0=50,cx1=250,cy=110,rr=Math.max(20,Math.min(42,d*0.9));
+  let g="";
+  g+=`<rect x="${cx0}" y="${cy-rr}" width="${cx1-cx0}" height="${rr*2}" rx="6" fill="rgba(125,211,252,.08)" stroke="var(--strength)" stroke-width="2.5"/>`;
+  g+=`<ellipse cx="${cx1}" cy="${cy}" rx="14" ry="${rr}" fill="rgba(125,211,252,.15)" stroke="var(--strength)" stroke-width="2.5"/>`;
+  if(di>0){
+    const rd=rr*(di/d);
+    g+=`<ellipse cx="${cx1}" cy="${cy}" rx="6" ry="${rd}" fill="var(--bg)" stroke="var(--ink-dim)" stroke-width="1.5" stroke-dasharray="3 2"/>`;
+    g+=`<text class="dia-lab" x="${cx1}" y="${cy+rd+16}" font-size="11" text-anchor="middle">di=${di} mm</text>`;
+  }
+  if(key){
+    g+=`<rect x="${(cx0+cx1)/2-14}" y="${cy-rr-8}" width="28" height="8" fill="var(--panel2)" stroke="var(--ink-dim)" stroke-width="1.5"/>`;
+    g+=`<text class="dia-lab" x="${(cx0+cx1)/2}" y="${cy-rr-14}" font-size="11" text-anchor="middle">キー溝</text>`;
+  }
+  g+=dimV(cx0-22,cy-rr,cy+rr,"d="+d+" mm",{ext1:cx0,ext2:cx0,right:false});
+  const tcx=(cx0+cx1)/2-30,tR=26;
+  g+=`<path d="M ${tcx-tR} ${cy-14} A ${tR} ${tR} 0 1 1 ${tcx+tR*0.3} ${cy-tR-4}" fill="none" stroke="var(--ok)" stroke-width="2"/>`+diaArrow("up",tcx+tR*0.3,cy-tR-4);
+  g+=`<text class="dia-lab" x="${tcx}" y="${cy+34}" font-size="12" fill="var(--ok)" text-anchor="middle">T=${Tnm.toFixed(1)} N・m</text>`;
+  if(M>0){
+    const mx1=cx0+30,mx2=cx0+70,my=cy-rr-22;
+    g+=`<line x1="${mx1}" y1="${my}" x2="${mx2}" y2="${my}" stroke="var(--shaft)" stroke-width="2"/>`;
+    g+=`<line x1="${mx1}" y1="${my-8}" x2="${mx1}" y2="${my+8}" stroke="var(--shaft)" stroke-width="2"/>`+diaArrow("down",mx1,my+8);
+    g+=`<line x1="${mx2}" y1="${my-8}" x2="${mx2}" y2="${my+8}" stroke="var(--shaft)" stroke-width="2"/>`+diaArrow("up",mx2,my-8);
+    g+=`<text class="dia-lab" x="${(mx1+mx2)/2}" y="${my-14}" font-size="12" fill="var(--shaft)" text-anchor="middle">M=${M} N・m</text>`;
+  }
+  svg.innerHTML=g;
 }
 
 function calcStrength(){stState.mode==="bolt"?calcBolt():calcShaft();}
@@ -1883,6 +2272,14 @@ function calcCut(){
     pushHistory({s:"cut",t:"フライス φ"+c.D+"×"+c.z+"枚 "+m.id,
       d:"n "+Math.round(n)+" ／ Vf "+Math.round(Vf)+" mm/min ／ "+Pc.toFixed(2)+" kW",
       st:JSON.parse(JSON.stringify(cutState))});
+    drawCutMill(c);
+    LAST.cut={title:"切削条件　フライス φ"+c.D+"×"+c.z+"枚刃　"+m.id,
+      lines:["工具径 D: "+c.D+" mm／刃数 z: "+c.z,"切削速度 Vc: "+c.Vc+" m/min／1刃送り fz: "+c.fz+" mm/刃",
+        "軸方向切込み ap: "+c.ap+" mm／径方向切込み ae: "+c.ae+" mm",
+        "回転数 n: "+Math.round(n)+" min⁻¹","送り速度 Vf: "+Math.round(Vf)+" mm/min",
+        "材料除去率 Q: "+Q.toFixed(1)+" cm³/min","所要動力 Pc: "+Pc.toFixed(2)+" kW（kc="+m.kc+" MPa）",
+        (c.L>0?"加工時間（1パス）: "+fmtMin(c.L/Vf):null),
+        "根拠: Vc=πDn/1000 等の切削理論式"].filter(Boolean)};
   }else if(cutState.mode==="drill"){
     const c=cutState.drill;
     if(!(c.D>0&&c.Vc>0&&c.f>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・Vc・f を正しく入力してください。</div>';return;}
@@ -1901,6 +2298,14 @@ function calcCut(){
     pushHistory({s:"cut",t:"ドリル φ"+c.D+" "+m.id,
       d:"n "+Math.round(n)+" ／ Vf "+Math.round(Vf)+" mm/min ／ 1穴 "+fmtMin(travel/Vf),
       st:JSON.parse(JSON.stringify(cutState))});
+    drawCutDrill(c,tip);
+    LAST.cut={title:"切削条件　ドリル φ"+c.D+"　"+m.id,
+      lines:["ドリル径 D: "+c.D+" mm／先端角: "+c.angle+"°",
+        "切削速度 Vc: "+c.Vc+" m/min／送り f: "+c.f+" mm/rev","穴深さ: "+c.dep+" mm",
+        "回転数 n: "+Math.round(n)+" min⁻¹","送り速度 Vf: "+Math.round(Vf)+" mm/min",
+        "先端円錐の長さ: "+tip.toFixed(2)+" mm／必要移動量: "+travel.toFixed(1)+" mm",
+        "1穴の加工時間: "+fmtMin(travel/Vf),"所要動力 Pc: "+Pc.toFixed(2)+" kW",
+        "根拠: Vc=πDn/1000 等の切削理論式"]};
   }else{
     const c=cutState.turn;
     if(!(c.D>0&&c.Vc>0&&c.f>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・Vc・f を正しく入力してください。</div>';return;}
@@ -1918,8 +2323,67 @@ function calcCut(){
     pushHistory({s:"cut",t:"旋盤 φ"+c.D+" "+m.id,
       d:"n "+Math.round(n)+" ／ f "+c.f+" ／ Rz "+Rz.toFixed(1)+" μm",
       st:JSON.parse(JSON.stringify(cutState))});
+    drawCutTurn(c,Rz);
+    LAST.cut={title:"切削条件　旋盤 φ"+c.D+"　"+m.id,
+      lines:["加工径 D: "+c.D+" mm","切削速度 Vc: "+c.Vc+" m/min／送り f: "+c.f+" mm/rev",
+        "切込み ap: "+c.ap+" mm／ノーズR: "+c.R+" mm",
+        "回転数 n: "+Math.round(n)+" min⁻¹","送り速度 Vf: "+Math.round(Vf)+" mm/min",
+        "理論粗さ Rz: "+Rz.toFixed(1)+" μm（Ra≈"+(Rz/4).toFixed(1)+" μm）",
+        "材料除去率 Q: "+Q.toFixed(1)+" cm³/min","所要動力 Pc: "+Pc.toFixed(2)+" kW",
+        (c.L>0?"加工時間（1パス）: "+fmtMin(c.L/Vf):null),
+        "根拠: Vc=πDn/1000 等の切削理論式"].filter(Boolean)};
   }
   $("#cutOut").innerHTML=h;$("#cutWarn").innerHTML=w;
+}
+function drawCutMill(c){
+  const svg=$("#cutPicSvg");if(!svg)return;
+  const cx=118,cy=110,Rtool=Math.max(26,Math.min(66,c.D*3));
+  const stockX=cx+Rtool*0.55,stockW=190,stockH=Math.min(150,Rtool*2.4);
+  let g="";
+  g+=`<rect x="${stockX}" y="${cy-stockH/2}" width="${stockW}" height="${stockH}" fill="rgba(252,165,165,.08)" stroke="var(--cut)" stroke-width="2"/>`;
+  const aePx=Math.max(10,Math.min(stockH*0.7,(c.ae/(c.D/2))*Rtool));
+  g+=`<rect x="${stockX}" y="${cy-aePx/2}" width="${Math.min(46,stockW*0.3)}" height="${aePx}" fill="rgba(252,165,165,.3)"/>`;
+  g+=`<circle cx="${cx}" cy="${cy}" r="${Rtool}" fill="none" stroke="var(--ink-dim)" stroke-width="2"/>`;
+  const nz=Math.max(1,Math.min(8,Math.round(c.z)||1));
+  for(let i=0;i<nz;i++){
+    const a=i*2*Math.PI/nz;
+    g+=`<line x1="${cx}" y1="${cy}" x2="${(cx+Rtool*Math.cos(a)).toFixed(1)}" y2="${(cy+Rtool*Math.sin(a)).toFixed(1)}" stroke="var(--ink-dim)" stroke-width="1" opacity=".45"/>`;
+  }
+  g+=dimH(cx-Rtool,cx+Rtool,cy+Rtool+22,"D="+c.D+" mm",{above:false});
+  g+=`<text class="dia-lab" x="${cx}" y="${cy-Rtool-10}" font-size="12" text-anchor="middle">z=${c.z} 枚刃</text>`;
+  g+=diaLeader(stockX+18,cy-aePx/2,stockX+70,cy-aePx/2-30,"径方向切込み ae="+c.ae+" mm");
+  g+=`<text class="dia-lab" x="${stockX+stockW-6}" y="${cy-stockH/2+16}" font-size="11" text-anchor="end">軸方向切込み ap=${c.ap} mm（奥行き）</text>`;
+  svg.innerHTML=g;
+}
+function drawCutDrill(c,tip){
+  const svg=$("#cutPicSvg");if(!svg)return;
+  const cx=150,Rtool=Math.max(18,Math.min(54,c.D*2.4));
+  const topY=36,holeDepthPx=Math.min(110,c.dep*2.2),tipPx=Math.min(36,tip*2.2);
+  const bottomY=topY+holeDepthPx;
+  let g="";
+  g+=`<rect x="${cx-Rtool-34}" y="${topY-16}" width="${(Rtool+34)*2}" height="${holeDepthPx+tipPx+36}" fill="rgba(252,165,165,.06)" stroke="var(--cut)" stroke-width="2"/>`;
+  g+=`<line x1="${cx-Rtool}" y1="${topY}" x2="${cx-Rtool}" y2="${bottomY}" stroke="var(--ink-dim)" stroke-width="2"/>`;
+  g+=`<line x1="${cx+Rtool}" y1="${topY}" x2="${cx+Rtool}" y2="${bottomY}" stroke="var(--ink-dim)" stroke-width="2"/>`;
+  g+=`<path d="M ${cx-Rtool} ${bottomY} L ${cx} ${bottomY+tipPx} L ${cx+Rtool} ${bottomY}" fill="none" stroke="var(--ink-dim)" stroke-width="2"/>`;
+  g+=`<line x1="${cx-Rtool}" y1="${topY}" x2="${cx+Rtool}" y2="${topY}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="3 3"/>`;
+  g+=dimH(cx-Rtool,cx+Rtool,topY-18,"D="+c.D+" mm",{above:true});
+  g+=dimV(cx+Rtool+22,topY,bottomY,"深さ "+c.dep+" mm",{right:true});
+  g+=`<text class="dia-lab" x="${cx}" y="${bottomY+tipPx+18}" font-size="11.5" text-anchor="middle">先端角 ${c.angle}°（先端長 ${tip.toFixed(2)} mm）</text>`;
+  svg.innerHTML=g;
+}
+function drawCutTurn(c,Rz){
+  const svg=$("#cutPicSvg");if(!svg)return;
+  const cx=160,cy=112,R=Math.max(30,Math.min(64,c.D*1.2));
+  let g="";
+  g+=`<rect x="${cx-92}" y="${cy-R}" width="92" height="${R*2}" fill="rgba(252,165,165,.06)" stroke="var(--cut)" stroke-width="2"/>`;
+  g+=`<ellipse cx="${cx}" cy="${cy}" rx="14" ry="${R}" fill="rgba(252,165,165,.1)" stroke="var(--cut)" stroke-width="2.5"/>`;
+  const apPx=Math.max(6,Math.min(R*0.7,(c.ap/(c.D/2))*R*3));
+  g+=`<rect x="${cx-92}" y="${cy-R-apPx}" width="92" height="${apPx}" fill="rgba(125,211,252,.15)" stroke="var(--strength)" stroke-width="2"/>`;
+  g+=dimV(cx+18,cy-R,cy+R,"D="+c.D+" mm",{right:true});
+  g+=diaLeader(cx-46,cy-R-apPx/2,cx-80,cy-R-apPx-24,"切込み ap="+c.ap+" mm");
+  g+=`<text class="dia-lab" x="${cx-46}" y="${cy+R+20}" font-size="11.5" text-anchor="middle">送り f=${c.f} mm/rev</text>`;
+  g+=`<text class="dia-lab" x="${cx-46}" y="${cy+R+36}" font-size="11.5" text-anchor="middle">ノーズR ${c.R} → Rz≈${Rz.toFixed(1)}μm</text>`;
+  svg.innerHTML=g;
 }
 function cutShowPanels(){
   $("#cutMillP").style.display=cutState.mode==="mill"?"":"none";
@@ -2196,9 +2660,116 @@ function calcBeam(){
   $("#beamNote").innerHTML="※ δ・Mの式は材料力学の標準解です（"+bc.n+"）。自重は考慮していません。長スパンでは自重を等分布荷重として加えてください"+
     (b.src==="steel"?"（この断面の自重 ≈ "+(sec.A*0.00785*9.80665).toFixed(1)+" N/m）":"")+"。";
 
+  drawBeamCase(bc,bc.pos?a/b.L:null);
+  drawBeamSection();
+  LAST.beam={title:"梁のたわみ　"+sec.name+"　"+bc.n,
+    lines:["断面: "+sec.name+"（I="+(sec.I/1e4).toFixed(1)+" cm⁴／Z="+(sec.Z/1e3).toFixed(1)+" cm³）",
+      "支持条件・荷重: "+bc.n,"スパン L: "+b.L+" mm",
+      "材料: "+m.n+"／安全率: "+b.sf,
+      "最大たわみ δ: "+delta.toFixed(3)+" mm"+(dLim!=null?"（許容 "+dLim.toFixed(2)+" mm = L/"+b.defl+"）":""),
+      "最大曲げモーメント: "+(Mmax/1000).toFixed(1)+" N・m（位置: "+bc.mAt+"）",
+      "曲げ応力 σ: "+sig.toFixed(1)+" MPa（許容 "+siga.toFixed(1)+" MPa）",
+      "判定: "+(ok?"成立":"不足")+"（たわみ"+(okD?"OK":"超過")+"／応力"+(okS?"OK":"超過")+"）",
+      "根拠: 材料力学の標準たわみ式（"+bc.n+"）"
+    ]};
   pushHistory({s:"beam",t:sec.name,
     d:bc.n+"　δ "+delta.toFixed(2)+" mm ／ σ "+sig.toFixed(1)+" MPa　"+(ok?"成立":"不足"),
     st:JSON.parse(JSON.stringify(beamState))});
+}
+function drawBeamCase(bc,aFrac){
+  const svg=$("#beamCaseSvg");if(!svg)return;
+  const x0=54,x1=306,cy=76;
+  const fixedLeft=["c1","c2","c6","c7","c8"].includes(bc.id);
+  const fixedRight=["c6","c7"].includes(bc.id);
+  const simpleLeft=["c3","c4","c5"].includes(bc.id);
+  const simpleRight=["c3","c4","c5"].includes(bc.id);
+  const hatch=x=>{let s=`<line x1="${x}" y1="${cy-26}" x2="${x}" y2="${cy+26}" stroke="var(--ink-dim)" stroke-width="3"/>`;
+    for(let i=-24;i<=20;i+=8)s+=`<line x1="${x}" y1="${cy+i}" x2="${x-10}" y2="${cy+i+10}" stroke="var(--ink-dim)" stroke-width="1.5"/>`;
+    return s;};
+  const tri=x=>`<polygon points="${x},${cy+4} ${x-11},${cy+22} ${x+11},${cy+22}" fill="none" stroke="var(--ink-dim)" stroke-width="2"/>`+
+    `<line x1="${x-16}" y1="${cy+22}" x2="${x+16}" y2="${cy+22}" stroke="var(--ink-dim)" stroke-width="2"/>`;
+  const arrowDown=(x,y0,len)=>`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0+len}" stroke="var(--ok)" stroke-width="2"/>`+diaArrow("down",x,y0+len);
+  let g="";
+  g+=`<line x1="${x0}" y1="${cy}" x2="${x1}" y2="${cy}" stroke="var(--beam)" stroke-width="5" stroke-linecap="round"/>`;
+  if(fixedLeft)g+=hatch(x0);
+  if(fixedRight)g+=hatch(x1);
+  if(simpleLeft)g+=tri(x0);
+  if(simpleRight)g+=tri(x1);
+  if(bc.load==="P"){
+    const xp=bc.pos?x0+(x1-x0)*(aFrac??0.3):(x0+x1)/2;
+    g+=arrowDown(xp,cy-38,32);
+    g+=`<text class="dia-lab" x="${xp}" y="${cy-42}" font-size="12" text-anchor="middle" fill="var(--ok)">P</text>`;
+    if(bc.pos)g+=dimH(x0,xp,cy+40,"a",{above:false});
+  }else if(bc.load==="w"){
+    for(let x=x0+18;x<=x1-18;x+=28)g+=arrowDown(x,cy-30,22);
+    g+=`<text class="dia-lab" x="${(x0+x1)/2}" y="${cy-38}" font-size="12" text-anchor="middle" fill="var(--ok)">w（等分布）</text>`;
+  }else{
+    g+=`<path d="M ${x1-6} ${cy-24} A 16 16 0 1 1 ${x1+6} ${cy-24}" fill="none" stroke="var(--shaft)" stroke-width="2"/>`+diaArrow("right",x1+6,cy-24);
+    g+=`<text class="dia-lab" x="${x1}" y="${cy-32}" font-size="12" text-anchor="middle" fill="var(--shaft)">M</text>`;
+  }
+  g+=dimH(x0,x1,cy+58,"L",{above:false});
+  svg.innerHTML=g;
+}
+function drawBeamSection(){
+  const svg=$("#beamSecSvg");if(!svg)return;
+  const b=beamState,cx=150,cy=110;
+  const axisLine=hw=>`<line x1="${cx-hw-16}" y1="${cy}" x2="${cx+hw+16}" y2="${cy}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="5 3"/>`;
+  const loadArrow=(x,topY)=>`<line x1="${x}" y1="${topY-26}" x2="${x}" y2="${topY-4}" stroke="var(--ok)" stroke-width="2"/>`+diaArrow("down",x,topY-4)+
+    `<text class="dia-lab" x="${x+8}" y="${topY-14}" font-size="11.5" fill="var(--ok)">荷重方向</text>`;
+  let g="";
+  if(b.src==="dims"){
+    if(b.shape==="round"){
+      const d=b.d.rd,R=Math.max(24,Math.min(70,d*1.4));
+      g+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(134,239,172,.1)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=axisLine(R)+dimH(cx-R,cx+R,cy+R+22,"d="+d+" mm",{above:false})+loadArrow(cx,cy-R);
+    }else if(b.shape==="pipe"){
+      const D=b.d.pd,t=b.d.pt,R=Math.max(24,Math.min(70,D*1.2));
+      g+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(134,239,172,.1)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=`<circle cx="${cx}" cy="${cy}" r="${Math.max(6,R-t*3)}" fill="var(--bg)" stroke="var(--ink-dim)" stroke-width="1.5"/>`;
+      g+=axisLine(R)+dimH(cx-R,cx+R,cy+R+22,"D="+D+" mm",{above:false})+
+        `<text class="dia-lab" x="${cx}" y="${cy+4}" font-size="11" text-anchor="middle">t=${t}</text>`+loadArrow(cx,cy-R);
+    }else if(b.shape==="rect"){
+      const {rb,rh}=b.d,sc=Math.min(120/rb,90/rh),hw=rb*sc/2,hh=rh*sc/2;
+      g+=`<rect x="${cx-hw}" y="${cy-hh}" width="${hw*2}" height="${hh*2}" fill="rgba(134,239,172,.1)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=axisLine(hw)+dimH(cx-hw,cx+hw,cy+hh+22,"b="+rb+" mm",{above:false})+
+        dimV(cx+hw+22,cy-hh,cy+hh,"h="+rh+" mm",{right:true})+loadArrow(cx,cy-hh);
+    }else{
+      const {bb,bh,bt}=b.d,sc=Math.min(120/bb,90/bh),hw=bb*sc/2,hh=bh*sc/2,it=Math.max(4,bt*sc);
+      g+=`<rect x="${cx-hw}" y="${cy-hh}" width="${hw*2}" height="${hh*2}" fill="rgba(134,239,172,.1)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=`<rect x="${cx-hw+it}" y="${cy-hh+it}" width="${hw*2-it*2}" height="${hh*2-it*2}" fill="var(--bg)" stroke="var(--ink-dim)" stroke-width="1.5"/>`;
+      g+=axisLine(hw)+dimH(cx-hw,cx+hw,cy+hh+22,"B="+bb+" mm",{above:false})+
+        dimV(cx+hw+22,cy-hh,cy+hh,"H="+bh+" mm",{right:true})+
+        `<text class="dia-lab" x="${cx}" y="${cy+4}" font-size="11" text-anchor="middle">t=${bt}</text>`+loadArrow(cx,cy-hh);
+    }
+  }else{
+    const fam=b.fam;
+    if(fam==="h"||fam==="ib"){
+      const hw=50,hh=70,fl=14;
+      g+=`<rect x="${cx-hw}" y="${cy-hh}" width="${hw*2}" height="${fl}" fill="rgba(134,239,172,.15)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=`<rect x="${cx-hw}" y="${cy+hh-fl}" width="${hw*2}" height="${fl}" fill="rgba(134,239,172,.15)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=`<rect x="${cx-8}" y="${cy-hh+fl}" width="16" height="${hh*2-fl*2}" fill="rgba(134,239,172,.15)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=axisLine(hw)+`<text class="dia-lab" x="${cx}" y="${cy+hh+22}" font-size="12" text-anchor="middle">${b.axis==="x"?"強軸（x-x）":"弱軸（y-y）"}</text>`+loadArrow(cx,cy-hh);
+    }else if(fam==="ch"){
+      const w=60,hh=70,fl=14;
+      g+=`<path d="M ${cx+w/2} ${cy-hh} L ${cx-w/2} ${cy-hh} L ${cx-w/2} ${cy-hh+fl} L ${cx-w/2+fl} ${cy-hh+fl} L ${cx-w/2+fl} ${cy+hh-fl} L ${cx-w/2} ${cy+hh-fl} L ${cx-w/2} ${cy+hh} L ${cx+w/2} ${cy+hh}" fill="rgba(134,239,172,.12)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=axisLine(w/2)+loadArrow(cx,cy-hh);
+    }else if(fam==="an"){
+      const w=80,fl=16;
+      g+=`<path d="M ${cx-w/2} ${cy-w/2} L ${cx-w/2} ${cy+w/2} L ${cx+w/2} ${cy+w/2} L ${cx+w/2} ${cy+w/2-fl} L ${cx-w/2+fl} ${cy+w/2-fl} L ${cx-w/2+fl} ${cy-w/2} Z" fill="rgba(134,239,172,.12)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=loadArrow(cx,cy-w/2);
+    }else if(fam==="sq"){
+      const w=70;
+      g+=`<rect x="${cx-w/2}" y="${cy-w/2}" width="${w}" height="${w}" fill="rgba(134,239,172,.12)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=`<rect x="${cx-w/2+10}" y="${cy-w/2+10}" width="${w-20}" height="${w-20}" fill="var(--bg)" stroke="var(--ink-dim)" stroke-width="1.5"/>`;
+      g+=axisLine(w/2)+loadArrow(cx,cy-w/2);
+    }else{
+      const R=55;
+      g+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(134,239,172,.12)" stroke="var(--beam)" stroke-width="2.5"/>`;
+      g+=`<circle cx="${cx}" cy="${cy}" r="${R-10}" fill="var(--bg)" stroke="var(--ink-dim)" stroke-width="1.5"/>`;
+      g+=axisLine(R)+loadArrow(cx,cy-R);
+    }
+  }
+  svg.innerHTML=g;
 }
 $("#beamSrc").querySelectorAll("button").forEach(b=>{
   b.onclick=()=>{
@@ -2268,6 +2839,201 @@ RESTORE.beam=st=>{
   buildBeamChips();beamShowLoadRows();calcBeam();
 };
 
+/* ========================================================= 台形加減速・タクトタイム =========================================================
+   単発動作のみ（要望確認Q18: シーケンス/タイムチャート機能は別途相談して実装）。
+   G_MMSS = 1G を mm/s² に換算する係数。
+   ========================================================= */
+const G_MMSS=9806.65;
+let tactState={mode:"time",L:200,V:300,T:1.0,unit:"g",aG:0.3,dG:0.3,sameAD:true,
+  mass:2,mu:0.1,theta:0};
+function tcAccelMMSS(g){return tactState.unit==="g"?g*G_MMSS:g*1000;}
+function tcShowFields(){
+  const m=tactState.mode;
+  $("#tcVRow").style.display=(m==="reqV")?"none":"";
+  $("#tcTRow").style.display=(m==="time")?"none":"";
+  $("#tcAccelCard").style.display=(m==="reqA")?"none":"";
+  $("#tactModeNote").textContent=
+    m==="time"?"L・V・a・d から タクトタイム T を計算します（台形/三角形を自動判定）。":
+    m==="reqV"?"L・T・a・d から、その時間で移動しきるために必要な最高速度 V を逆算します。":
+    "L・V・T から、加速度＝減速度として必要な加減速度を逆算します。";
+}
+function calcTact(){
+  const s=tactState,out=$("#tactOut"),warn=$("#tactWarn");
+  const L=s.L;
+  const a=tcAccelMMSS(s.aG), d=s.sameAD?a:tcAccelMMSS(s.dG);
+  let h="",w="",T=null,V=null,Vpeak=null,triangle=false,ta=null,tc=null,td=null;
+  if(!(L>0)){out.innerHTML="";warn.innerHTML='<div class="warn">⚠ 移動距離 L を正しく入力してください。</div>';return;}
+  if(s.mode==="time"){
+    V=s.V;
+    if(!(V>0&&a>0&&d>0)){out.innerHTML="";warn.innerHTML='<div class="warn">⚠ V・a・d を正しく入力してください。</div>';return;}
+    const La=V*V/(2*a),Ld=V*V/(2*d);
+    if(L>=La+Ld){
+      const Lc=L-La-Ld;ta=V/a;td=V/d;tc=Lc/V;T=ta+tc+td;
+      h+=resRow("プロファイル","台形（最高速度に到達）","");
+    }else{
+      triangle=true;
+      Vpeak=Math.sqrt(2*L*a*d/(a+d));
+      ta=Vpeak/a;td=Vpeak/d;tc=0;T=ta+td;
+      w+='<div class="warn">⚠ 指定した最高速度 '+V.toFixed(0)+' mm/s には<b>到達しません</b>。実到達速度 '+Vpeak.toFixed(1)+' mm/s（三角形プロファイル）で計算しています。</div>';
+      h+=resRow("プロファイル","三角形（Vに未到達）","");
+    }
+    h+=resRow("タクトタイム T",T.toFixed(3)+" s","",true);
+    h+=resRow("実到達速度",(triangle?Vpeak:V).toFixed(1)+" mm/s",triangle?"指定Vには届かない":"指定通り到達");
+    h+=resRow("加速時間 ta",ta.toFixed(3)+" s","");
+    h+=resRow("定速時間 tc",tc.toFixed(3)+" s",tc<=0?"定速区間なし（三角形）":"");
+    h+=resRow("減速時間 td",td.toFixed(3)+" s","");
+  }else if(s.mode==="reqV"){
+    T=s.T;
+    if(!(T>0&&a>0&&d>0)){out.innerHTML="";warn.innerHTML='<div class="warn">⚠ T・a・d を正しく入力してください。</div>';return;}
+    const k=(1/(2*a)+1/(2*d));
+    const Vtri=T*a*d/(a+d), Ltri=Vtri*Vtri*k;
+    if(L<Ltri-1e-9){
+      const Tmin=2*Math.sqrt(2*L*(a+d)/(a*d)); // 三角形での最短時間の概算（対称でない場合の簡易表示）
+      w+='<div class="warn">ℹ この移動は加減速全開でも目標タクトタイムより<b>短時間（約 '+
+        (Math.sqrt(2*L*a*d/(a+d))/a+Math.sqrt(2*L*a*d/(a+d))/d).toFixed(3)+
+        ' s）で完了</b>します。速度を上げる必要はありません（待ち時間の追加、または加減速を緩めることを検討してください）。</div>';
+      h+=resRow("プロファイル","三角形（目標Tより速く完了）","");
+      V=Math.sqrt(2*L*a*d/(a+d));
+      h+=resRow("自然に到達する最高速度",V.toFixed(1)+" mm/s","");
+    }else{
+      const disc=T*T-4*k*L;
+      if(disc<0){
+        warn.innerHTML='<div class="warn">⚠ この移動距離・時間・加減速度の組み合わせでは<b>達成できません</b>（速度をいくら上げても間に合いません）。加減速度を上げるか、タクトタイムを長くしてください。</div>';
+        out.innerHTML="";return;
+      }
+      V=(T-Math.sqrt(disc))/(2*k);
+      const ta2=V/a,td2=V/d,tc2=T-ta2-td2;
+      ta=ta2;td=td2;tc=Math.max(0,tc2);
+      h+=resRow("プロファイル",tc2>1e-6?"台形（定速区間あり）":"三角形（境界）","");
+      h+=resRow("必要な最高速度 V",V.toFixed(1)+" mm/s","",true);
+      h+=resRow("加速時間 ta",ta.toFixed(3)+" s","");
+      h+=resRow("定速時間 tc",tc.toFixed(3)+" s","");
+      h+=resRow("減速時間 td",td.toFixed(3)+" s","");
+    }
+  }else{ // reqA: L,V,T既知・a=dを逆算
+    V=s.V;T=s.T;
+    if(!(V>0&&T>0)){out.innerHTML="";warn.innerHTML='<div class="warn">⚠ V・T を正しく入力してください。</div>';return;}
+    if(V*T<=L){
+      warn.innerHTML='<div class="warn">⚠ 最高速度 '+V+' mm/s で時間 '+T+' s ずっと走っても '+(V*T).toFixed(0)+' mm にしかならず、L='+L+' mm に届きません。V を上げるか T を長くしてください。</div>';
+      out.innerHTML="";return;
+    }
+    const aReq=V*V/(V*T-L);
+    const ta2=V/aReq;
+    if(2*ta2>T+1e-9){
+      warn.innerHTML='<div class="warn">⚠ この条件では最高速度Vに到達する前に時間Tが終わってしまいます（三角形プロファイルが必要）。Vを下げるかTを長くしてください。</div>';
+      out.innerHTML="";return;
+    }
+    ta=ta2;td=ta2;tc=T-2*ta2;
+    h+=resRow("必要な加減速度 a=d",(aReq/G_MMSS).toFixed(3)+" G　（"+(aReq/1000).toFixed(2)+" m/s²）","",true);
+    h+=resRow("加速時間 ta",ta.toFixed(3)+" s","");
+    h+=resRow("定速時間 tc",tc.toFixed(3)+" s","");
+    h+=resRow("減速時間 td",td.toFixed(3)+" s","");
+    Vpeak=V;
+  }
+  out.innerHTML=h;warn.innerHTML=w;
+  drawTact(ta,tc,td,triangle?Vpeak:(V!=null?V:Vpeak));
+  $("#tcAccelConv").textContent="a = "+(a/G_MMSS).toFixed(3)+" G = "+(a/1000).toFixed(3)+" m/s²　／　d = "+(d/G_MMSS).toFixed(3)+" G = "+(d/1000).toFixed(3)+" m/s²";
+  LAST.tact={title:"タクトタイム計算　L="+L+"mm",
+    lines:["モード: "+({time:"時間を計算",reqV:"最高速度を計算",reqA:"加減速度を計算"}[s.mode]),
+      "移動距離 L: "+L+" mm",
+      (s.mode!=="reqV"?"最高速度 V: "+s.V+" mm/s":null),
+      (s.mode!=="time"?"目標タクトタイムT: "+s.T+" s":null),
+      (s.mode!=="reqA"?"加速度 a: "+(a/G_MMSS).toFixed(3)+" G（"+(a/1000).toFixed(2)+" m/s²）／減速度 d: "+(d/G_MMSS).toFixed(3)+" G（"+(d/1000).toFixed(2)+" m/s²）":null),
+      (T!=null?"タクトタイム T: "+T.toFixed(3)+" s":null),
+      (s.mode==="reqV"&&V!=null?"必要な最高速度 V: "+V.toFixed(1)+" mm/s":null),
+      (s.mode==="reqA"?"必要な加減速度: "+(V*V/(V*T-L)/G_MMSS).toFixed(3)+" G":null),
+      "根拠: 台形加減速の標準式（一定加速度モデル）"
+    ].filter(Boolean)};
+  calcTactForce(a,d);
+  pushHistory({s:"tact",t:"L"+L+"mm "+({time:"T計算",reqV:"V逆算",reqA:"a逆算"}[s.mode]),
+    d:(T!=null?"T "+T.toFixed(3)+"s ":"")+(s.mode==="reqV"&&V!=null?"必要V "+V.toFixed(1)+"mm/s":""),
+    st:JSON.parse(JSON.stringify(s))});
+}
+function calcTactForce(a,d){
+  const m=tactState.mass,mu=tactState.mu,th=tactState.theta*Math.PI/180,g=9806.65; // mm/s^2 系
+  if(!(m>0)){$("#tactForceOut").innerHTML="";return;}
+  // F = m(a + μg cosθ + g sinθ)　単位を揃えるため m[kg]・a[mm/s²→m/s²]で計算しNで出力
+  const Fa=m*(a/1000+mu*9.80665*Math.cos(th)+9.80665*Math.sin(th));
+  const Fd=m*(d/1000+mu*9.80665*Math.cos(th)+9.80665*Math.sin(th));
+  $("#tactForceOut").innerHTML=
+    resRow("加速時の必要推力",Fa.toFixed(1)+" N",fKgf(Fa),true)+
+    resRow("減速時の必要推力",Fd.toFixed(1)+" N",fKgf(Fd))+
+    resRow("選定の目安（大きい方＋余裕）",(Math.max(Fa,Fd)*1.5).toFixed(1)+" N","計算値×1.5を目安に定格推力を選定");
+}
+function drawTact(ta,tc,td,V){
+  const svg=$("#tactSvg");if(!svg)return;
+  if(ta==null||V==null||!(V>0)){svg.innerHTML="";return;}
+  const x0=40,y0=170,maxW=290,maxH=110;
+  const T=ta+tc+td;
+  const sx=maxW/Math.max(T,0.001);
+  const xa=x0+ta*sx,xc=xa+tc*sx,xd=xc+td*sx;
+  const yV=y0-maxH;
+  let g="";
+  g+=`<polyline points="${x0},${y0} ${xa},${yV} ${xc},${yV} ${xd},${y0}" fill="rgba(79,195,247,.08)" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  g+=`<line x1="${x0}" y1="${y0}" x2="${xd+10}" y2="${y0}" stroke="var(--ink-dim)" stroke-width="1.5"/>`+diaArrow("right",xd+10,y0);
+  g+=`<line x1="${x0}" y1="${y0+6}" x2="${x0}" y2="${yV-14}" stroke="var(--ink-dim)" stroke-width="1.5"/>`+diaArrow("up",x0,yV-14);
+  g+=`<text class="dia-lab" x="${xd+14}" y="${y0+4}" font-size="11">t</text>`;
+  g+=`<text class="dia-lab" x="${x0-8}" y="${yV-18}" font-size="11" text-anchor="end">V</text>`;
+  g+=`<line x1="${x0}" y1="${yV}" x2="${xa}" y2="${yV}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="3 3"/>`;
+  g+=`<text class="dia-val" x="${x0-6}" y="${yV-4}" font-size="12" text-anchor="end">${V.toFixed(0)}</text>`;
+  g+=dimH(x0,xa,y0+22,"ta="+ta.toFixed(2)+"s",{above:false});
+  if(tc>1e-6)g+=dimH(xa,xc,y0+22,"tc="+tc.toFixed(2)+"s",{above:false});
+  g+=dimH(xc,xd,y0+22,"td="+td.toFixed(2)+"s",{above:false});
+  svg.innerHTML=g;
+}
+$("#tactMode").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#tactMode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    tactState.mode=b.dataset.m;tcShowFields();calcTact();
+  };
+});
+$("#tcUnit").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#tcUnit").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    tactState.unit=b.dataset.u;
+    const lbl=tactState.unit==="g"?"G":"m/s²";
+    $("#tcAU").textContent=lbl;$("#tcDU").textContent=lbl;
+    $("#tcA").value=tactState.unit==="g"?tactState.aG:(tactState.aG*G_MMSS/1000);
+    $("#tcD").value=tactState.unit==="g"?tactState.dG:(tactState.dG*G_MMSS/1000);
+    calcTact();
+  };
+});
+$("#tcSameAD").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#tcSameAD").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    tactState.sameAD=b.dataset.s==="1";
+    $("#tcDRow").style.display=tactState.sameAD?"none":"";
+    $("#tcALab").textContent=tactState.sameAD?"加減速度 a=d":"加速度 a";
+    calcTact();
+  };
+});
+$("#tcL").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.L=v;calcTact();}});
+$("#tcV").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.V=v;calcTact();}});
+$("#tcT").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.T=v;calcTact();}});
+$("#tcA").addEventListener("input",e=>{
+  const v=parseNum(e.target.value);if(v==null)return;
+  tactState.aG=tactState.unit==="g"?v:v*1000/G_MMSS;calcTact();
+});
+$("#tcD").addEventListener("input",e=>{
+  const v=parseNum(e.target.value);if(v==null)return;
+  tactState.dG=tactState.unit==="g"?v:v*1000/G_MMSS;calcTact();
+});
+$("#tcMass").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.mass=v;calcTact();}});
+$("#tcMu").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.mu=v;calcTact();}});
+$("#tcTheta").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.theta=v;calcTact();}});
+RESTORE.tact=st=>{
+  if(!st)return;
+  tactState=Object.assign({},tactState,st);
+  $("#tactMode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.m===tactState.mode));
+  $("#tcSameAD").querySelectorAll("button").forEach(x=>x.classList.toggle("on",(x.dataset.s==="1")===tactState.sameAD));
+  $("#tcDRow").style.display=tactState.sameAD?"none":"";
+  $("#tcL").value=tactState.L;$("#tcV").value=tactState.V;$("#tcT").value=tactState.T;
+  $("#tcA").value=tactState.unit==="g"?tactState.aG:(tactState.aG*G_MMSS/1000);
+  $("#tcD").value=tactState.unit==="g"?tactState.dG:(tactState.dG*G_MMSS/1000);
+  $("#tcMass").value=tactState.mass;$("#tcMu").value=tactState.mu;$("#tcTheta").value=tactState.theta;
+  tcShowFields();calcTact();
+};
+
 /* ========================================================= ナビゲーション =========================================================
    左ドロワー = 全機能／右ドロワー = 早見表・履歴。
    機能を追加するときは SCREENS に1行足し、対応する <main class="screen" id="screen-◯◯"> を置くだけ。
@@ -2278,7 +3044,8 @@ const SCREENS=[
   {id:"trig",  icon:"△", name:"三角関数・テーパ", sub:"勾配・角度・テーパ比"},
   {id:"strength", icon:"⚙", name:"ボルト・軸の強度", sub:"軸力・締付トルク・せん断"},
   {id:"cut",  icon:"⚒", name:"切削条件", sub:"回転数・送り・動力・粗さ"},
-  {id:"beam", icon:"工", name:"梁のたわみ・強度", sub:"8種の支持条件・型鋼対応"}
+  {id:"beam", icon:"工", name:"梁のたわみ・強度", sub:"8種の支持条件・型鋼対応"},
+  {id:"tact", icon:"⏱", name:"タクトタイム計算", sub:"台形加減速・アクチュエータ選定"}
 ];
 const INFO_SCREENS=[
   {id:"about", icon:"ⓘ", name:"使い方・単位について"},
@@ -2477,6 +3244,22 @@ const REFS={
     h+='<div class="ref-note">目安レンジは公開文献・教科書ベースの自作値です。<b>工具メーカーのカタログ推奨値を必ず優先</b>してください。kcは動力概算用（切りくず厚0.1〜0.3mm想定）。</div>';
     return h;
   },
+  tact(){
+    let h='<div class="ref-h">加速度の換算（1G = 9806.65 mm/s²）</div>';
+    h+=refTable(["G","mm/s²","m/s²"],
+      [0.1,0.2,0.3,0.5,0.7,1.0,1.5,2.0].map(g=>[g.toFixed(1),Math.round(g*G_MMSS),(g*G_MMSS/1000).toFixed(2)]));
+    h+='<div class="ref-h">台形加減速の基本式</div>';
+    h+=refTable(["項目","式"],[
+      ["加速時間 ta","V/a"],["加速距離 La","V²/(2a)"],
+      ["減速時間 td","V/d"],["減速距離 Ld","V²/(2d)"],
+      ["定速距離 Lc","L−La−Ld"],["定速時間 tc","Lc/V"],
+      ["総移動時間 T","ta+tc+td"],
+      ["三角形時の実到達速度","√(2Lad/(a+d))"],
+      ["必要推力 F","m(a+μg·cosθ+g·sinθ)"]
+    ]);
+    h+='<div class="ref-note">台形（一定加速度）モデルの標準式です。S字加減速（ジャーク制限）は未対応。実機の整定時間・サーボ応答は含みません。</div>';
+    return h;
+  },
   beam(){
     let h='<div class="ref-h">たわみ・曲げの公式</div>';
     h+=refTable(["支持・荷重","δmax","Mmax"],[
@@ -2646,7 +3429,9 @@ solveTri();solveTaper();
 buildStrengthChips();calcStrength();
 buildCutChips();renderCutSug();calcCut();
 buildBeamChips();beamShowLoadRows();calcBeam();
+tcShowFields();calcTact();
 renderRef();
+initDiaToggles();
 // 起動直後の初期描画で履歴が積まれないよう、保留中の1件だけ捨てる
 clearTimeout(histTimer);histPending=null;
 initSplash();initBanner();
