@@ -1,6 +1,9 @@
 <!DOCTYPE html>
-<!-- このファイルは build_variants.sh が docs/app.html から自動生成した「広告なし版」です。
-     直接編集しないでください。編集は docs/app.html に対して行い、再生成してください。 -->
+<!-- ★ このファイルが開発の正本です（広告なし版）。
+     バグ修正・機能追加はすべてこのファイルに入れます。
+     公開用の広告あり版 docs/app.html は凍結中で、
+     「ドキュメントをすべて更新して」の指示が出たときに
+     ./build_variants.sh --release で作り直します。 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -165,6 +168,32 @@ svg text{font-family:ui-monospace,"SF Mono",Menlo,monospace;}
 .mat-search:focus{outline:none;border-color:var(--accent);}
 .mat-search::placeholder{color:#6B7A89;}
 .mat-grp{font-size:.68rem;color:var(--ink-dim);margin-left:6px;}
+
+/* ---- タクトタイム: 設計手順のステップ表示 ---- */
+.step-head{display:flex;align-items:center;gap:9px;margin-bottom:6px;}
+.step-no{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#06121A;
+  font-size:.85rem;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.need-box{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:10px 12px;}
+.need-box .nb-k{font-size:.74rem;color:var(--ink-dim);}
+.need-box .nb-v{font-size:1.5rem;font-weight:800;color:var(--accent);}
+.need-box .nb-s{font-size:.72rem;color:var(--ink-dim);margin-top:2px;line-height:1.5;}
+/* 余裕度バー: 目標時間に対してどれだけ余っている／超えているかを一目で見せる */
+.mbar{margin-top:10px;}
+.mbar-top{display:flex;justify-content:space-between;align-items:baseline;font-size:.76rem;color:var(--ink-dim);}
+.mbar-top b{font-size:1.05rem;}
+.mbar-track{height:16px;border-radius:9px;background:#0B0E12;border:1px solid var(--line);
+  margin-top:5px;overflow:hidden;position:relative;}
+.mbar-fill{height:100%;border-radius:8px 0 0 8px;transition:width .18s;}
+.mbar-fill.ok{background:linear-gradient(90deg,#34D399,#0F7B4F);}
+.mbar-fill.mid{background:linear-gradient(90deg,#FBBF24,#9A6B00);}
+.mbar-fill.ng{background:linear-gradient(90deg,#F87171,#B4232B);}
+.mbar-note{font-size:.72rem;color:var(--ink-dim);margin-top:5px;line-height:1.6;}
+.vd{border-radius:13px;padding:12px;border:1px solid;font-weight:800;}
+.vd .vd-t{font-size:1.1rem;}
+.vd .vd-s{display:block;font-size:.78rem;font-weight:600;margin-top:4px;line-height:1.6;}
+.vd.ok{color:var(--ok);border-color:var(--ok);background:rgba(52,211,153,.1);}
+.vd.mid{color:var(--mid);border-color:var(--mid);background:rgba(251,191,36,.1);}
+.vd.ng{color:var(--ng);border-color:var(--ng);background:rgba(248,113,113,.1);}
 
 /* ---- 結果コピー ---- */
 .act-row{display:flex;gap:8px;}
@@ -904,37 +933,29 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
 <main class="screen" id="screen-tact">
 
   <div class="card">
-    <div class="seg" id="tactMode">
-      <button data-m="time" class="on">時間を計算</button>
-      <button data-m="reqV">最高速度を計算</button>
-      <button data-m="reqA">加減速度を計算</button>
-    </div>
-    <p class="note" style="margin-top:8px" id="tactModeNote"></p>
-  </div>
-
-  <div class="card">
-    <h2>移動条件</h2>
+    <div class="step-head"><span class="step-no">1</span><h2 style="margin:0">動かす距離と、目標のタクトタイム</h2></div>
+    <p class="note" style="margin-top:0">設計の最初はこの2つしか決まっていないことが多いので、ここから始めます。</p>
     <div class="f-grid">
-      <div class="f-row f-full"><span class="lab">移動距離 L</span>
+      <div class="f-row"><span class="lab">移動距離 L</span>
         <div class="ipt"><input id="tcL" class="num" type="text" inputmode="decimal" value="200"><span class="u">mm</span></div></div>
-      <div class="f-row" id="tcVRow"><span class="lab">最高速度 V</span>
-        <div class="ipt"><input id="tcV" class="num" type="text" inputmode="decimal" value="300"><span class="u">mm/s</span></div></div>
-      <div class="f-row" id="tcTRow" style="display:none"><span class="lab">目標タクトタイム T</span>
+      <div class="f-row"><span class="lab">目標タクトタイム T</span>
         <div class="ipt"><input id="tcT" class="num" type="text" inputmode="decimal" value="1.0"><span class="u">s</span></div></div>
     </div>
   </div>
 
-  <div class="card" id="tcAccelCard">
-    <h2>加減速度</h2>
-    <div class="seg sm" id="tcUnit">
+  <div class="card">
+    <div class="step-head"><span class="step-no">2</span><h2 style="margin:0">加減速度をあたりで決める</h2></div>
+    <p class="note" style="margin-top:0"><b>まずは 0.5 G</b> から始めるのが一般的です。高価な機種ほど大きな値が使えます。</p>
+    <div class="hchips" id="tcAPreset"></div>
+    <div class="seg sm" id="tcUnit" style="margin-top:8px">
       <button data-u="g" class="on">G</button>
       <button data-u="ms2">m/s²</button>
     </div>
     <div class="f-grid" style="margin-top:8px">
-      <div class="f-row"><span class="lab" id="tcALab">加速度 a</span>
-        <div class="ipt"><input id="tcA" class="num" type="text" inputmode="decimal" value="0.3"><span class="u" id="tcAU">G</span></div></div>
+      <div class="f-row"><span class="lab" id="tcALab">加減速度 a=d</span>
+        <div class="ipt"><input id="tcA" class="num" type="text" inputmode="decimal" value="0.5"><span class="u" id="tcAU">G</span></div></div>
       <div class="f-row" id="tcDRow" style="display:none"><span class="lab">減速度 d</span>
-        <div class="ipt"><input id="tcD" class="num" type="text" inputmode="decimal" value="0.3"><span class="u" id="tcDU">G</span></div></div>
+        <div class="ipt"><input id="tcD" class="num" type="text" inputmode="decimal" value="0.5"><span class="u" id="tcDU">G</span></div></div>
     </div>
     <div class="seg sm" id="tcSameAD" style="margin-top:8px">
       <button data-s="1" class="on">加速＝減速</button>
@@ -943,16 +964,43 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
     <p class="note" id="tcAccelConv"></p>
   </div>
 
-  <div class="card dia-card">
-    <div class="dia-head"><h2 style="margin:0">速度線図</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
-    <div class="dia-body"><svg id="tactSvg" class="dia-svg" viewBox="0 0 360 232" width="100%"></svg></div>
+  <div class="card">
+    <div class="step-head"><span class="step-no">3</span><h2 style="margin:0">最高速度を探る</h2></div>
+    <p class="note" style="margin-top:0">目標時間に間に合う速度を自動で出します。実際に選ぶ速度を入れて確かめてください。</p>
+    <div class="need-box" id="tcNeedV"></div>
+    <div class="f-grid" style="margin-top:8px">
+      <div class="f-row f-full"><span class="lab">使う最高速度 V</span>
+        <div class="ipt"><input id="tcV" class="num" type="text" inputmode="decimal" value="300"><span class="u">mm/s</span></div></div>
+    </div>
   </div>
 
   <div class="card">
-    <h2>計算結果</h2>
-    <div class="spec-list" id="tactOut"></div>
+    <div class="step-head"><span class="step-no">4</span><h2 style="margin:0">アクチュエータの上限を入れて成立を見る</h2></div>
+    <p class="note" style="margin-top:0">カタログの上限値を入れると、その機種で成り立つかを判定します（0で判定しない）。</p>
+    <div class="f-grid">
+      <div class="f-row"><span class="lab">最高速度の上限</span>
+        <div class="ipt"><input id="tcVmax" class="num" type="text" inputmode="decimal" value="400"><span class="u">mm/s</span></div></div>
+      <div class="f-row"><span class="lab">加減速度の上限</span>
+        <div class="ipt"><input id="tcAmax" class="num" type="text" inputmode="decimal" value="1"><span class="u">G</span></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>判定</h2>
+    <div id="tcVerdict"></div>
+    <div class="spec-list" id="tactOut" style="margin-top:10px"></div>
     <div id="tactWarn"></div>
-    <p class="note">台形（一定加速度）モデルの標準式による<b>参考値</b>です。S字加減速（ジャーク制限）には対応していません。実機の位置決め整定時間・サーボの応答遅れは含みません。</p>
+  </div>
+
+  <div class="card dia-card">
+    <div class="dia-head"><h2 style="margin:0">速度線図</h2><button class="dia-toggle">▲ 図を閉じる</button></div>
+    <div class="dia-body"><svg id="tactSvg" class="dia-svg" viewBox="0 0 360 250" width="100%"></svg></div>
+  </div>
+
+  <div class="card">
+    <h2>落とし所を探す</h2>
+    <p class="note" style="margin-top:0">目標に届かないとき、どれをどこまで動かせば成立するかを出します。</p>
+    <div class="spec-list" id="tcFix"></div>
   </div>
 
   <div class="card">
@@ -966,7 +1014,7 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
         <div class="ipt"><input id="tcTheta" class="num" type="text" inputmode="decimal" value="0"><span class="u">°</span></div></div>
     </div>
     <div class="spec-list" id="tactForceOut" style="margin-top:10px"></div>
-    <p class="note">F = m(a + μg・cosθ + g・sinθ)。垂直軸（θ=90°）では摩擦項は効かず自重 mg が常時のります。必要推力はカタログの定格推力に安全マージンを見て選定してください。</p>
+    <p class="note">F = m(a + μg・cosθ + g・sinθ)。垂直軸（θ=90°）では摩擦項は効かず自重 mg が常時のります。カタログの定格推力に安全マージンを見て選定してください。</p>
     <div class="act-row">
       <button class="copy-btn" onclick="copyScreenResult('tact',this)">📋 結果をコピー</button>
       <button class="copy-btn" onclick="saveScreenImage('tact',this)">🖼 画像で保存</button>
@@ -3254,7 +3302,8 @@ function drawBeamCase(bc,aFrac){
   if(simpleLeft)g+=tri(x0);
   if(simpleRight)g+=tri(x1);
   if(bc.load==="P"){
-    const xp=bc.pos?x0+(x1-x0)*(aFrac??0.3):(x0+x1)/2;
+    // 片持ちは自由端（右端）に荷重がかかる。中央に描くと別のケースの絵になってしまう
+    const xp=bc.pos?x0+(x1-x0)*(aFrac??0.3):(fixedLeft&&!fixedRight?x1:(x0+x1)/2);
     g+=arrowDown(xp,cy-38,32);
     g+=`<text class="dia-lab" x="${xp}" y="${cy-42}" font-size="12" text-anchor="middle" fill="var(--ok)">P</text>`;
     if(bc.pos)g+=dimH(x0,xp,cy+40,"a",{above:false});
@@ -3409,211 +3458,325 @@ RESTORE.beam=st=>{
   buildBeamChips();beamShowLoadRows();calcBeam();
 };
 
-/* ========================================================= 台形加減速・タクトタイム =========================================================
-   単発動作のみ（要望確認Q18: シーケンス/タイムチャート機能は別途相談して実装）。
-   G_MMSS = 1G を mm/s² に換算する係数。
+/* ========================================================= タクトタイム（設計手順型） =========================================================
+   設計の実際の手順に合わせて 1画面で完結させる。
+     STEP1 距離Lと目標T（最初はこれしか決まっていない）
+     STEP2 加減速度を 0.5G あたりから決める
+     STEP3 目標に間に合う最高速度Vを逆算して提示、実際に使うVを入れて確認
+     STEP4 アクチュエータの上限（V上限・a上限）で成立するか判定
+   足りないときは「何をどこまで上げれば届くか」を必ず数字で出す。
    ========================================================= */
 const G_MMSS=9806.65;
-let tactState={mode:"time",L:200,V:300,T:1.0,unit:"g",aG:0.3,dG:0.3,sameAD:true,
-  mass:2,mu:0.1,theta:0};
-function tcAccelMMSS(g){return tactState.unit==="g"?g*G_MMSS:g*1000;}
-function tcShowFields(){
-  const m=tactState.mode;
-  $("#tcVRow").style.display=(m==="reqV")?"none":"";
-  $("#tcTRow").style.display=(m==="time")?"none":"";
-  $("#tcAccelCard").style.display=(m==="reqA")?"none":"";
-  $("#tactModeNote").textContent=
-    m==="time"?"L・V・a・d から タクトタイム T を計算します（台形/三角形を自動判定）。":
-    m==="reqV"?"L・T・a・d から、その時間で移動しきるために必要な最高速度 V を逆算します。":
-    "L・V・T から、加速度＝減速度として必要な加減速度を逆算します。";
+let tactState={L:200,T:1.0,unit:"g",aG:0.5,dG:0.5,sameAD:true,V:300,
+  vMax:400,aMaxG:1,mass:2,mu:0.1,theta:0};
+const A_PRESETS=[
+  {g:0.2,n:"0.2 G",s:"ゆっくり・重搬送"},
+  {g:0.3,n:"0.3 G",s:"標準的な単軸"},
+  {g:0.5,n:"0.5 G",s:"まずここから"},
+  {g:1.0,n:"1.0 G",s:"高速タイプ"},
+  {g:2.0,n:"2.0 G",s:"高剛性・高価格"}
+];
+function tcA(){return tactState.aG*G_MMSS;}          // mm/s²
+function tcD(){return (tactState.sameAD?tactState.aG:tactState.dG)*G_MMSS;}
+
+/* 台形/三角形を解いて所要時間を返す。到達しない場合は実到達速度も返す */
+function tactSolve(L,V,a,d){
+  if(!(L>0&&V>0&&a>0&&d>0))return null;
+  const La=V*V/(2*a),Ld=V*V/(2*d);
+  if(L>=La+Ld){
+    const ta=V/a,td=V/d,tc=(L-La-Ld)/V;
+    return {T:ta+tc+td,ta,tc,td,vPeak:V,tri:false};
+  }
+  const vp=Math.sqrt(2*L*a*d/(a+d));
+  return {T:vp/a+vp/d,ta:vp/a,tc:0,td:vp/d,vPeak:vp,tri:true};
+}
+/* 目標時間Tに間に合わせるのに必要な最高速度。届かないなら null */
+function tactNeedV(L,T,a,d){
+  const k=1/(2*a)+1/(2*d);
+  const tMin=2*Math.sqrt(L*k);          // 三角形（V無制限）での最短時間
+  if(T<=0)return {impossible:true,tMin};
+  if(T<tMin)return {impossible:true,tMin};
+  const disc=T*T-4*k*L;
+  if(disc<0)return {impossible:true,tMin};
+  const v=(T-Math.sqrt(disc))/(2*k);     // 小さい方の解＝必要最小限のV
+  const vTri=Math.sqrt(L/k);             // 三角形になる境界のV
+  return {v:Math.max(v,0),tMin,vTri};
+}
+/* 目標時間Tに間に合わせるのに必要な加減速度（a=d）。V制限を考慮 */
+function tactNeedA(L,T,V){
+  if(!(V>0&&T>0))return null;
+  if(V*T<=L)return {impossible:true};    // V一定で走っても届かない
+  return V*V/(V*T-L);                    // mm/s²
 }
 function calcTact(){
-  const s=tactState,out=$("#tactOut"),warn=$("#tactWarn");
-  const L=s.L;
-  const a=tcAccelMMSS(s.aG), d=s.sameAD?a:tcAccelMMSS(s.dG);
-  let h="",w="",T=null,V=null,Vpeak=null,triangle=false,ta=null,tc=null,td=null;
-  if(!(L>0)){out.innerHTML="";warn.innerHTML='<div class="warn">⚠ 移動距離 L を正しく入力してください。</div>';return;}
-  if(s.mode==="time"){
-    V=s.V;
-    if(!(V>0&&a>0&&d>0)){out.innerHTML="";warn.innerHTML='<div class="warn">⚠ V・a・d を正しく入力してください。</div>';return;}
-    const La=V*V/(2*a),Ld=V*V/(2*d);
-    if(L>=La+Ld){
-      const Lc=L-La-Ld;ta=V/a;td=V/d;tc=Lc/V;T=ta+tc+td;
-      h+=resRow("プロファイル","台形（最高速度に到達）","");
-    }else{
-      triangle=true;
-      Vpeak=Math.sqrt(2*L*a*d/(a+d));
-      ta=Vpeak/a;td=Vpeak/d;tc=0;T=ta+td;
-      w+='<div class="warn">⚠ 指定した最高速度 '+V.toFixed(0)+' mm/s には<b>到達しません</b>。実到達速度 '+Vpeak.toFixed(1)+' mm/s（三角形プロファイル）で計算しています。</div>';
-      h+=resRow("プロファイル","三角形（Vに未到達）","");
-    }
-    h+=resRow("タクトタイム T",T.toFixed(3)+" s","",true);
-    h+=resRow("実到達速度",(triangle?Vpeak:V).toFixed(1)+" mm/s",triangle?"指定Vには届かない":"指定通り到達");
-    h+=resRow("加速時間 ta",ta.toFixed(3)+" s","");
-    h+=resRow("定速時間 tc",tc.toFixed(3)+" s",tc<=0?"定速区間なし（三角形）":"");
-    h+=resRow("減速時間 td",td.toFixed(3)+" s","");
-  }else if(s.mode==="reqV"){
-    T=s.T;
-    if(!(T>0&&a>0&&d>0)){out.innerHTML="";warn.innerHTML='<div class="warn">⚠ T・a・d を正しく入力してください。</div>';return;}
-    const k=(1/(2*a)+1/(2*d));
-    const Vtri=T*a*d/(a+d), Ltri=Vtri*Vtri*k;
-    if(L<Ltri-1e-9){
-      const Tmin=2*Math.sqrt(2*L*(a+d)/(a*d)); // 三角形での最短時間の概算（対称でない場合の簡易表示）
-      w+='<div class="warn">ℹ この移動は加減速全開でも目標タクトタイムより<b>短時間（約 '+
-        (Math.sqrt(2*L*a*d/(a+d))/a+Math.sqrt(2*L*a*d/(a+d))/d).toFixed(3)+
-        ' s）で完了</b>します。速度を上げる必要はありません（待ち時間の追加、または加減速を緩めることを検討してください）。</div>';
-      h+=resRow("プロファイル","三角形（目標Tより速く完了）","");
-      V=Math.sqrt(2*L*a*d/(a+d));
-      h+=resRow("自然に到達する最高速度",V.toFixed(1)+" mm/s","");
-    }else{
-      const disc=T*T-4*k*L;
-      if(disc<0){
-        warn.innerHTML='<div class="warn">⚠ この移動距離・時間・加減速度の組み合わせでは<b>達成できません</b>（速度をいくら上げても間に合いません）。加減速度を上げるか、タクトタイムを長くしてください。</div>';
-        out.innerHTML="";return;
-      }
-      V=(T-Math.sqrt(disc))/(2*k);
-      const ta2=V/a,td2=V/d,tc2=T-ta2-td2;
-      ta=ta2;td=td2;tc=Math.max(0,tc2);
-      h+=resRow("プロファイル",tc2>1e-6?"台形（定速区間あり）":"三角形（境界）","");
-      h+=resRow("必要な最高速度 V",V.toFixed(1)+" mm/s","",true);
-      h+=resRow("加速時間 ta",ta.toFixed(3)+" s","");
-      h+=resRow("定速時間 tc",tc.toFixed(3)+" s","");
-      h+=resRow("減速時間 td",td.toFixed(3)+" s","");
-    }
-  }else{ // reqA: L,V,T既知・a=dを逆算
-    V=s.V;T=s.T;
-    if(!(V>0&&T>0)){out.innerHTML="";warn.innerHTML='<div class="warn">⚠ V・T を正しく入力してください。</div>';return;}
-    if(V*T<=L){
-      warn.innerHTML='<div class="warn">⚠ 最高速度 '+V+' mm/s で時間 '+T+' s ずっと走っても '+(V*T).toFixed(0)+' mm にしかならず、L='+L+' mm に届きません。V を上げるか T を長くしてください。</div>';
-      out.innerHTML="";return;
-    }
-    const aReq=V*V/(V*T-L);
-    const ta2=V/aReq;
-    if(2*ta2>T+1e-9){
-      warn.innerHTML='<div class="warn">⚠ この条件では最高速度Vに到達する前に時間Tが終わってしまいます（三角形プロファイルが必要）。Vを下げるかTを長くしてください。</div>';
-      out.innerHTML="";return;
-    }
-    ta=ta2;td=ta2;tc=T-2*ta2;
-    h+=resRow("必要な加減速度 a=d",(aReq/G_MMSS).toFixed(3)+" G　（"+(aReq/1000).toFixed(2)+" m/s²）","",true);
-    h+=resRow("加速時間 ta",ta.toFixed(3)+" s","");
-    h+=resRow("定速時間 tc",tc.toFixed(3)+" s","");
-    h+=resRow("減速時間 td",td.toFixed(3)+" s","");
-    Vpeak=V;
-  }
-  out.innerHTML=h;warn.innerHTML=w;
-  drawTact(ta,tc,td,triangle?Vpeak:(V!=null?V:Vpeak));
+  const s=tactState,L=s.L,T=s.T,V=s.V,a=tcA(),d=tcD();
+  const out=$("#tactOut"),warn=$("#tactWarn");
   $("#tcAccelConv").textContent="a = "+(a/G_MMSS).toFixed(3)+" G = "+(a/1000).toFixed(3)+" m/s²　／　d = "+(d/G_MMSS).toFixed(3)+" G = "+(d/1000).toFixed(3)+" m/s²";
-  // 推力は結果の一部なので、保存内容を組み立てる前に計算しておく
+  if(!(L>0)){
+    out.innerHTML="";warn.innerHTML='<div class="warn">⚠ 移動距離 L を入力してください。</div>';
+    $("#tcVerdict").innerHTML="";$("#tcNeedV").innerHTML="";$("#tcFix").innerHTML="";drawTact(null);return;
+  }
+  // ---- STEP3: 必要な最高速度 ----
+  const need=tactNeedV(L,T,a,d);
+  if(need.impossible){
+    $("#tcNeedV").innerHTML='<div class="nb-k">この加減速度で出せる最短時間</div>'+
+      '<div class="nb-v">'+need.tMin.toFixed(3)+' s</div>'+
+      '<div class="nb-s">速度をいくら上げても目標 '+T+' s には届きません。加減速度を上げるか、目標時間を緩めてください。</div>';
+  }else{
+    $("#tcNeedV").innerHTML='<div class="nb-k">目標 '+T+' s に間に合う最高速度</div>'+
+      '<div class="nb-v">'+need.v.toFixed(1)+' mm/s 以上</div>'+
+      '<div class="nb-s">この加減速度で出せる最短時間は '+need.tMin.toFixed(3)+' s（速度無制限のとき）</div>';
+  }
+  // ---- 実際に使うVでの結果 ----
+  const r=tactSolve(L,V,a,d);
+  if(!r){
+    out.innerHTML="";warn.innerHTML='<div class="warn">⚠ V・a・d は0より大きい値を入力してください。</div>';
+    $("#tcVerdict").innerHTML="";$("#tcFix").innerHTML="";drawTact(null);return;
+  }
+  const ratio=T>0?r.T/T:null;                 // 目標に対する使用率
+  const margin=ratio!=null?(1-ratio)*100:null; // 余裕率 %
+  // ---- STEP4: アクチュエータ上限との突き合わせ ----
+  const vMax=s.vMax>0?s.vMax:null, aMax=s.aMaxG>0?s.aMaxG*G_MMSS:null;
+  const overV=vMax!=null&&V>vMax, overA=aMax!=null&&Math.max(a,d)>aMax;
+  // ---- 判定 ----
+  let cls,ttl,sub=[];
+  if(ratio==null){cls="mid";ttl="目標タクトタイムを入れてください";}
+  else if(ratio<=1&&!overV&&!overA){
+    cls="ok";ttl="成立　"+r.T.toFixed(3)+" s ／ 目標 "+T+" s";
+    sub.push("余裕 "+margin.toFixed(0)+"%（目標時間の "+(ratio*100).toFixed(0)+"% で完了）");
+  }else if(ratio<=1){
+    cls="ng";ttl="時間は足りるが、機種の上限を超えています";
+    if(overV)sub.push("最高速度 "+V+" mm/s が上限 "+vMax+" mm/s を超過");
+    if(overA)sub.push("加減速度 "+(Math.max(a,d)/G_MMSS).toFixed(2)+" G が上限 "+s.aMaxG+" G を超過");
+  }else{
+    cls="ng";ttl="目標に届きません　"+r.T.toFixed(3)+" s ／ 目標 "+T+" s";
+    sub.push((r.T-T).toFixed(3)+" s 超過（目標時間の "+(ratio*100).toFixed(0)+"%）");
+    if(overV)sub.push("さらに最高速度が上限 "+vMax+" mm/s を超過");
+    if(overA)sub.push("さらに加減速度が上限 "+s.aMaxG+" G を超過");
+  }
+  // 余裕度バー（超過時は100%で振り切らせ、超過ぶんを文言で示す）
+  let bar="";
+  if(ratio!=null){
+    const pct=Math.max(2,Math.min(100,ratio*100));
+    const bc=ratio<=0.8?"ok":(ratio<=1?"mid":"ng");
+    bar='<div class="mbar"><div class="mbar-top"><span>目標時間の使用率</span><b>'+(ratio*100).toFixed(0)+'%</b></div>'+
+      '<div class="mbar-track"><div class="mbar-fill '+bc+'" style="width:'+pct+'%"></div></div>'+
+      '<div class="mbar-note">'+(ratio<=1
+        ? "目標 "+T+" s に対し "+r.T.toFixed(3)+" s で完了。<b>余裕 "+margin.toFixed(0)+"%</b>"
+        : "目標 "+T+" s を <b>"+(r.T-T).toFixed(3)+" s 超過</b>")+"</div></div>";
+  }
+  $("#tcVerdict").innerHTML='<div class="vd '+cls+'"><span class="vd-t">'+(cls==="ok"?"✓ ":"✕ ")+ttl+'</span>'+
+    (sub.length?'<span class="vd-s">'+sub.join("<br>")+"</span>":"")+"</div>"+bar;
+  // ---- 明細 ----
+  let h="";
+  h+=resRow("プロファイル",r.tri?"三角形（Vに未到達）":"台形（最高速度に到達）","");
+  h+=resRow("所要時間",r.T.toFixed(3)+" s",ratio!=null?"目標 "+T+" s の "+(ratio*100).toFixed(0)+"%":"",true);
+  h+=resRow("実到達速度",r.vPeak.toFixed(1)+" mm/s",r.tri?"指定Vには届かない":"指定通り到達");
+  h+=resRow("加速時間 ta",r.ta.toFixed(3)+" s","");
+  h+=resRow("定速時間 tc",r.tc.toFixed(3)+" s",r.tc<=1e-9?"定速区間なし":"");
+  h+=resRow("減速時間 td",r.td.toFixed(3)+" s","");
+  h+=resRow("加速距離 La",(V*V/(2*a)).toFixed(1)+" mm","V²/(2a)");
+  out.innerHTML=h;
+  // ---- 警告 ----
+  let w="";
+  if(r.tri)w+='<div class="warn">⚠ 指定した最高速度 '+V+' mm/s には到達しません（実到達 '+r.vPeak.toFixed(1)+' mm/s）。距離が短いか加減速が緩やかです。</div>';
+  if(overV)w+='<div class="warn">⚠ 最高速度 '+V+' mm/s が機種の上限 '+vMax+' mm/s を超えています。この機種では成立しません。</div>';
+  if(overA)w+='<div class="warn">⚠ 加減速度 '+(Math.max(a,d)/G_MMSS).toFixed(2)+' G が機種の上限 '+s.aMaxG+' G を超えています。</div>';
+  if(Math.max(a,d)/G_MMSS>3)w+='<div class="warn">⚠ '+(Math.max(a,d)/G_MMSS).toFixed(1)+' G は一般的なアクチュエータでは実現困難です（市販品はおおむね 2 G 以下）。ワークの保持・振動も問題になります。</div>';
+  warn.innerHTML=w;
+  drawTact(r,T);
+  buildTactFix(L,T,V,a,d,r,vMax,aMax);
   calcTactForce(a,d);
-  LAST.tact={title:"タクトタイム計算　L="+L+" mm",
+  LAST.tact={title:"タクトタイム計算　L="+L+" mm ／ 目標 "+T+" s",
     lines:["【入力条件】",
-      "モード: "+({time:"時間を計算",reqV:"最高速度を計算",reqA:"加減速度を計算"}[s.mode]),
       "移動距離 L: "+L+" mm",
-      (s.mode!=="reqV"?"最高速度 V: "+s.V+" mm/s":null),
-      (s.mode!=="time"?"目標タクトタイム T: "+s.T+" s":null),
-      (s.mode!=="reqA"?"加速度 a: "+(a/G_MMSS).toFixed(3)+" G（"+(a/1000).toFixed(2)+" m/s²）":null),
-      (s.mode!=="reqA"?"減速度 d: "+(d/G_MMSS).toFixed(3)+" G（"+(d/1000).toFixed(2)+" m/s²）"+(s.sameAD?"（加速と同じ）":""):null),
+      "目標タクトタイム T: "+T+" s",
+      "加速度 a: "+(a/G_MMSS).toFixed(3)+" G（"+(a/1000).toFixed(2)+" m/s²）",
+      "減速度 d: "+(d/G_MMSS).toFixed(3)+" G（"+(d/1000).toFixed(2)+" m/s²）"+(s.sameAD?"（加速と同じ）":""),
+      "使う最高速度 V: "+V+" mm/s",
+      "機種の上限: 速度 "+(vMax!=null?vMax+" mm/s":"指定なし")+" ／ 加減速度 "+(aMax!=null?s.aMaxG+" G":"指定なし"),
       "可搬質量 m: "+s.mass+" kg／摩擦係数 μ: "+s.mu+"／傾斜角 θ: "+s.theta+"°",
-      "【計算結果】"]
-      .filter(Boolean)
+      "【判定】",
+      (cls==="ok"?"✓ ":"✕ ")+ttl]
+      .concat(sub.map(x=>"　"+x.replace(/<[^>]+>/g,"")))
+      .concat(need.impossible
+        ? ["必要な最高速度: この加減速度では目標に到達不可（最短 "+need.tMin.toFixed(3)+" s）"]
+        : ["目標 "+T+" s に間に合う最高速度: "+need.v.toFixed(1)+" mm/s 以上",
+           "この加減速度での最短時間: "+need.tMin.toFixed(3)+" s（速度無制限のとき）"])
+      .concat(["【計算結果】"])
       .concat(rowsFromDOM("#tactOut"))
+      .concat(["【落とし所】"])
+      .concat(rowsFromDOM("#tcFix"))
       .concat(["【必要推力】"])
       .concat(rowsFromDOM("#tactForceOut"))
       .concat(["根拠: 台形加減速の標準式（一定加速度モデル）／F = m(a + μg·cosθ + g·sinθ）"]),
     notes:notesFromDOM("#tactWarn")};
-  pushHistory({s:"tact",t:"L"+L+"mm "+({time:"T計算",reqV:"V逆算",reqA:"a逆算"}[s.mode]),
-    d:(T!=null?"T "+T.toFixed(3)+"s ":"")+(s.mode==="reqV"&&V!=null?"必要V "+V.toFixed(1)+"mm/s":""),
+  pushHistory({s:"tact",t:"L"+L+"mm 目標"+T+"s",
+    d:r.T.toFixed(3)+" s（目標の"+(ratio!=null?(ratio*100).toFixed(0):"—")+"%）／V "+V+" mm/s ／ a "+(a/G_MMSS).toFixed(2)+"G",
     st:JSON.parse(JSON.stringify(s))});
 }
+/* 目標に届かないとき、何をどこまで動かせば成立するかを出す */
+function buildTactFix(L,T,V,a,d,r,vMax,aMax){
+  const el=$("#tcFix");if(!el)return;
+  if(!(T>0)){el.innerHTML='<div class="note" style="margin:0">目標タクトタイムを入れると、足りない分の詰め方を提案します。</div>';return;}
+  let h="";
+  const ok=r.T<=T&&!(vMax!=null&&V>vMax)&&!(aMax!=null&&Math.max(a,d)>aMax);
+  if(ok){
+    // 余裕があるなら、どこまで緩められるかを出す（コストを下げる方向の落とし所）
+    const needNow=tactNeedV(L,T,a,d);
+    if(!needNow.impossible)h+=resRow("速度はここまで落とせる",needNow.v.toFixed(1)+" mm/s","これ以上落とすと目標に届かない");
+    const aSlow=tactNeedA(L,T,V);
+    if(aSlow&&!aSlow.impossible)h+=resRow("加減速度はここまで緩められる",(aSlow/G_MMSS).toFixed(3)+" G","現在 "+(a/G_MMSS).toFixed(2)+" G。緩めるほど安価・低振動");
+    h+=resRow("到達できる最短時間",(2*Math.sqrt(L*(1/(2*a)+1/(2*d)))).toFixed(3)+" s","この加減速度で速度無制限のとき");
+    el.innerHTML=h||'<div class="note" style="margin:0">成立しています。</div>';
+    return;
+  }
+  // ① 速度を上げる
+  const nv=tactNeedV(L,T,a,d);
+  if(nv.impossible){
+    h+=resRow("速度を上げる","不可","この加減速度では速度をいくら上げても最短 "+nv.tMin.toFixed(3)+" s");
+  }else{
+    const over=vMax!=null&&nv.v>vMax;
+    h+=resRow("最高速度を上げる",nv.v.toFixed(1)+" mm/s まで",
+      (over?"⚠ 機種の上限 "+vMax+" mm/s を超えるので不可":"現在 "+V+" mm/s → 上げれば成立"),!over);
+  }
+  // ② 加減速度を上げる
+  const na=tactNeedA(L,T,V);
+  if(na&&!na.impossible){
+    const naG=na/G_MMSS;
+    const over=aMax!=null&&na>aMax;
+    const unreal=naG>3;
+    h+=resRow("加減速度を上げる",naG.toFixed(3)+" G まで",
+      unreal?"⚠ "+naG.toFixed(1)+" G は市販品では現実的でない":
+      (over?"⚠ 機種の上限 "+(aMax/G_MMSS).toFixed(2)+" G を超えるので不可":"現在 "+(a/G_MMSS).toFixed(2)+" G → 上げれば成立"),
+      !over&&!unreal);
+  }else{
+    h+=resRow("加減速度を上げる","不可","最高速度 "+V+" mm/s で走り続けても目標時間内に "+L+" mm 進めない");
+  }
+  // ③ タクトタイムを緩める（いちばん現実的なことが多い）
+  h+=resRow("タクトタイムを緩める",r.T.toFixed(3)+" s まで","今の条件で達成できる時間。装置全体のサイクルで吸収できるか検討",true);
+  // ④ 機種の上限いっぱいで何秒になるか
+  if(vMax!=null||aMax!=null){
+    const vv=vMax!=null?vMax:V, aa=aMax!=null?aMax:a, dd=aMax!=null?aMax:d;
+    const best=tactSolve(L,vv,aa,dd);
+    if(best)h+=resRow("この機種の全開で",best.T.toFixed(3)+" s",
+      best.T<=T?"目標を満たせる":"それでも目標 "+T+" s には届かない → 機種変更かタクト見直し");
+  }
+  el.innerHTML=h;
+}
 function calcTactForce(a,d){
-  const m=tactState.mass,mu=tactState.mu,th=tactState.theta*Math.PI/180,g=9806.65; // mm/s^2 系
+  const m=tactState.mass,mu=tactState.mu,th=tactState.theta*Math.PI/180;
   if(!(m>0)){$("#tactForceOut").innerHTML="";return;}
-  // F = m(a + μg cosθ + g sinθ)　単位を揃えるため m[kg]・a[mm/s²→m/s²]で計算しNで出力
+  // F = m(a + μg cosθ + g sinθ)。a は mm/s² なので m/s² へ直して N で出す
   const Fa=m*(a/1000+mu*9.80665*Math.cos(th)+9.80665*Math.sin(th));
   const Fd=m*(d/1000+mu*9.80665*Math.cos(th)+9.80665*Math.sin(th));
   $("#tactForceOut").innerHTML=
     resRow("加速時の必要推力",Fa.toFixed(1)+" N",fKgf(Fa),true)+
     resRow("減速時の必要推力",Fd.toFixed(1)+" N",fKgf(Fd))+
-    resRow("選定の目安（大きい方＋余裕）",(Math.max(Fa,Fd)*1.5).toFixed(1)+" N","計算値×1.5を目安に定格推力を選定");
+    resRow("選定の目安（大きい方×1.5）",(Math.max(Fa,Fd)*1.5).toFixed(1)+" N","定格推力はこれ以上を目安に");
 }
-function drawTact(ta,tc,td,V){
+/* 速度線図。到達／未到達に関わらず実際の形（台形or三角形）で描き、目標時間と比べる */
+function drawTact(r,Tgoal){
   const svg=$("#tactSvg");if(!svg)return;
-  if(ta==null||V==null||!(V>0)){svg.innerHTML="";return;}
-  const x0=48,y0=150,maxW=272,maxH=104;
-  const T=ta+tc+td;
-  const sx=maxW/Math.max(T,0.001);
-  const xa=x0+ta*sx,xc=xa+tc*sx,xd=xc+td*sx;
+  if(!r){svg.innerHTML="";return;}
+  const x0=48,y0=168,maxW=268,maxH=104;
+  const tMax=Math.max(r.T,Tgoal>0?Tgoal:0)*1.06;
+  const sx=maxW/Math.max(tMax,0.001);
   const yV=y0-maxH;
+  const xa=x0+r.ta*sx,xc=xa+r.tc*sx,xd=xc+r.td*sx;
   let g="";
-  g+=`<polyline points="${x0},${y0} ${xa},${yV} ${xc},${yV} ${xd},${y0}" fill="rgba(79,195,247,.08)" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>`;
-  g+=`<line x1="${x0}" y1="${y0}" x2="${xd+12}" y2="${y0}" stroke="var(--ink-dim)" stroke-width="1.5"/>`+diaArrow("right",xd+12,y0);
+  // 目標時間の位置に縦線（間に合っているかが一目で分かる）
+  if(Tgoal>0){
+    const xg=x0+Tgoal*sx;
+    g+=`<rect x="${x0}" y="${yV-10}" width="${xg-x0}" height="${y0-yV+10}" fill="rgba(52,211,153,.06)"/>`;
+    g+=`<line x1="${xg}" y1="${yV-16}" x2="${xg}" y2="${y0+8}" stroke="var(--ok)" stroke-width="2" stroke-dasharray="6 4"/>`;
+    g+=`<text class="dia-lab" x="${xg}" y="${yV-20}" font-size="11.5" fill="var(--ok)" text-anchor="middle">目標 ${Tgoal}s</text>`;
+  }
+  // 速度線図（三角形なら定速区間が0になり自然に三角になる）
+  const col=r.tri?"var(--mid)":"var(--accent)";
+  const fill=r.tri?"rgba(251,191,36,.10)":"rgba(79,195,247,.10)";
+  g+=`<polyline points="${x0},${y0} ${xa},${yV} ${xc},${yV} ${xd},${y0}" fill="${fill}" stroke="${col}" stroke-width="2.5" stroke-linejoin="round"/>`;
+  g+=`<line x1="${x0}" y1="${y0}" x2="${x0+maxW+14}" y2="${y0}" stroke="var(--ink-dim)" stroke-width="1.5"/>`+diaArrow("right",x0+maxW+14,y0);
   g+=`<line x1="${x0}" y1="${y0+6}" x2="${x0}" y2="${yV-14}" stroke="var(--ink-dim)" stroke-width="1.5"/>`+diaArrow("up",x0,yV-14);
-  g+=`<text class="dia-lab" x="${xd+16}" y="${y0+4}" font-size="11">t</text>`;
+  g+=`<text class="dia-lab" x="${x0+maxW+18}" y="${y0+4}" font-size="11">t</text>`;
   g+=`<text class="dia-lab" x="${x0-8}" y="${yV-18}" font-size="11" text-anchor="end">V</text>`;
   g+=`<line x1="${x0}" y1="${yV}" x2="${xa}" y2="${yV}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="3 3"/>`;
-  g+=`<text class="dia-val" x="${x0-6}" y="${yV-4}" font-size="12" text-anchor="end">${V.toFixed(0)}</text>`;
-  // 区間の寸法線は「区切り」だけを示し、ラベルは付けない。
-  // 加速区間は数十msで極端に狭くなることがあり、線上に文字を置くと必ず隣と重なるため、
-  // 3区間の値はまとめて下段の1行に出す（どの条件でも確実に読める）
-  const segY=y0+20;
-  const seg=(a,b)=>(b-a<0.5)?"":dimH(a,b,segY,"",{above:false});
-  g+=seg(x0,xa)+(tc>1e-6?seg(xa,xc):"")+seg(xc,xd);
-  g+=dimH(x0,xd,y0+46,"T="+T.toFixed(3)+" s",{ext1:segY+4,ext2:segY+4,above:false});
-  const parts="ta="+ta.toFixed(3)+"s　tc="+tc.toFixed(3)+"s　td="+td.toFixed(3)+"s";
-  g+=`<text class="dia-lab" x="${(x0+xd)/2}" y="${y0+78}" font-size="11.5" text-anchor="middle">${parts}</text>`;
+  g+=`<text class="dia-val" x="${x0-6}" y="${yV-4}" font-size="12" text-anchor="end">${r.vPeak.toFixed(0)}</text>`;
+  g+=`<text class="dia-lab" x="${(x0+xd)/2}" y="${yV+((y0-yV)/2)}" font-size="12" text-anchor="middle" fill="${col}">${r.tri?"三角形":"台形"}</text>`;
+  // 実所要時間の寸法
+  g+=dimH(x0,xd,y0+24,"T="+r.T.toFixed(3)+" s",{ext1:y0,ext2:y0,above:false});
+  // 図が左に寄っても文字がはみ出さないよう、内訳は常に描画領域の中央に置く
+  const parts="ta="+r.ta.toFixed(3)+"s　tc="+r.tc.toFixed(3)+"s　td="+r.td.toFixed(3)+"s";
+  g+=`<text class="dia-lab" x="${x0+maxW/2}" y="${y0+58}" font-size="11.5" text-anchor="middle">${parts}</text>`;
+  if(Tgoal>0){
+    const okT=r.T<=Tgoal;
+    g+=`<text x="${x0+maxW/2}" y="${y0+80}" font-size="12" font-weight="700" text-anchor="middle" fill="${okT?"var(--ok)":"var(--ng)"}">`+
+       (okT?"目標内（余裕 "+((1-r.T/Tgoal)*100).toFixed(0)+"%）":"目標を "+(r.T-Tgoal).toFixed(3)+" s 超過")+"</text>";
+  }
   svg.innerHTML=g;
 }
-$("#tactMode").querySelectorAll("button").forEach(b=>{
-  b.onclick=()=>{
-    $("#tactMode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
-    tactState.mode=b.dataset.m;tcShowFields();calcTact();
-  };
-});
+/* ---- 入力の受け取り ---- */
+function tcSyncAccelInputs(){
+  const u=tactState.unit;
+  $("#tcAU").textContent=u==="g"?"G":"m/s²";
+  $("#tcDU").textContent=u==="g"?"G":"m/s²";
+  $("#tcA").value=u==="g"?tactState.aG:+(tactState.aG*G_MMSS/1000).toFixed(3);
+  $("#tcD").value=u==="g"?tactState.dG:+(tactState.dG*G_MMSS/1000).toFixed(3);
+  $("#tcDRow").style.display=tactState.sameAD?"none":"";
+  $("#tcALab").textContent=tactState.sameAD?"加減速度 a=d":"加速度 a";
+}
+function buildTactUI(){
+  const el=$("#tcAPreset");el.innerHTML="";
+  A_PRESETS.forEach(p=>{
+    const c=document.createElement("button");
+    c.className="chip"+(Math.abs(tactState.aG-p.g)<1e-9?" on":"");
+    c.innerHTML=p.n+'<span style="font-size:.7rem;color:var(--ink-dim);margin-left:6px">'+p.s+"</span>";
+    c.onclick=()=>{tactState.aG=p.g;if(tactState.sameAD)tactState.dG=p.g;tcSyncAccelInputs();buildTactUI();calcTact();};
+    el.appendChild(c);
+  });
+}
 $("#tcUnit").querySelectorAll("button").forEach(b=>{
   b.onclick=()=>{
     $("#tcUnit").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
-    tactState.unit=b.dataset.u;
-    const lbl=tactState.unit==="g"?"G":"m/s²";
-    $("#tcAU").textContent=lbl;$("#tcDU").textContent=lbl;
-    $("#tcA").value=tactState.unit==="g"?tactState.aG:(tactState.aG*G_MMSS/1000);
-    $("#tcD").value=tactState.unit==="g"?tactState.dG:(tactState.dG*G_MMSS/1000);
-    calcTact();
+    tactState.unit=b.dataset.u;tcSyncAccelInputs();calcTact();
   };
 });
 $("#tcSameAD").querySelectorAll("button").forEach(b=>{
   b.onclick=()=>{
     $("#tcSameAD").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
     tactState.sameAD=b.dataset.s==="1";
-    $("#tcDRow").style.display=tactState.sameAD?"none":"";
-    $("#tcALab").textContent=tactState.sameAD?"加減速度 a=d":"加速度 a";
-    calcTact();
+    if(tactState.sameAD)tactState.dG=tactState.aG;
+    tcSyncAccelInputs();calcTact();
   };
 });
-$("#tcL").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.L=v;calcTact();}});
-$("#tcV").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.V=v;calcTact();}});
-$("#tcT").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.T=v;calcTact();}});
+const tcNum=(sel,fn)=>$(sel).addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){fn(v);calcTact();}});
+tcNum("#tcL",v=>tactState.L=v);
+tcNum("#tcT",v=>tactState.T=v);
+tcNum("#tcV",v=>tactState.V=v);
+tcNum("#tcVmax",v=>tactState.vMax=v);
+tcNum("#tcAmax",v=>tactState.aMaxG=v);
+tcNum("#tcMass",v=>tactState.mass=v);
+tcNum("#tcMu",v=>tactState.mu=v);
+tcNum("#tcTheta",v=>tactState.theta=v);
 $("#tcA").addEventListener("input",e=>{
   const v=parseNum(e.target.value);if(v==null)return;
-  tactState.aG=tactState.unit==="g"?v:v*1000/G_MMSS;calcTact();
+  tactState.aG=tactState.unit==="g"?v:v*1000/G_MMSS;
+  if(tactState.sameAD)tactState.dG=tactState.aG;
+  buildTactUI();calcTact();
 });
 $("#tcD").addEventListener("input",e=>{
   const v=parseNum(e.target.value);if(v==null)return;
   tactState.dG=tactState.unit==="g"?v:v*1000/G_MMSS;calcTact();
 });
-$("#tcMass").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.mass=v;calcTact();}});
-$("#tcMu").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.mu=v;calcTact();}});
-$("#tcTheta").addEventListener("input",e=>{const v=parseNum(e.target.value);if(v!=null){tactState.theta=v;calcTact();}});
 RESTORE.tact=st=>{
   if(!st)return;
   tactState=Object.assign({},tactState,st);
-  $("#tactMode").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.m===tactState.mode));
-  $("#tcSameAD").querySelectorAll("button").forEach(x=>x.classList.toggle("on",(x.dataset.s==="1")===tactState.sameAD));
-  $("#tcDRow").style.display=tactState.sameAD?"none":"";
-  $("#tcL").value=tactState.L;$("#tcV").value=tactState.V;$("#tcT").value=tactState.T;
-  $("#tcA").value=tactState.unit==="g"?tactState.aG:(tactState.aG*G_MMSS/1000);
-  $("#tcD").value=tactState.unit==="g"?tactState.dG:(tactState.dG*G_MMSS/1000);
+  $("#tcL").value=tactState.L;$("#tcT").value=tactState.T;$("#tcV").value=tactState.V;
+  $("#tcVmax").value=tactState.vMax;$("#tcAmax").value=tactState.aMaxG;
   $("#tcMass").value=tactState.mass;$("#tcMu").value=tactState.mu;$("#tcTheta").value=tactState.theta;
-  tcShowFields();calcTact();
+  $("#tcUnit").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.u===tactState.unit));
+  $("#tcSameAD").querySelectorAll("button").forEach(x=>x.classList.toggle("on",(x.dataset.s==="1")===tactState.sameAD));
+  tcSyncAccelInputs();buildTactUI();calcTact();
 };
 
 /* ========================================================= 重量計算 =========================================================
@@ -3844,11 +4007,25 @@ function drawWeightPic(o){
       g+=`<ellipse cx="${cx+L/2}" cy="${cy}" rx="12" ry="${R/2}" ${F}/>`;
       g+=dimV(cx-L/2-22,cy-R/2,cy+R/2,"φ"+d.D,{ext1:cx-L/2,ext2:cx-L/2,right:false});
     }else{
-      const s=R/2;
-      g+=`<rect x="${cx-L/2}" y="${cy-s}" width="${L}" height="${s*2}" ${F}/>`;
-      const hx=cx+L/2,pts=[0,1,2,3,4,5].map(i=>{const a=Math.PI/6+i*Math.PI/3;return (hx+12*Math.cos(a))+","+(cy+s*Math.sin(a));}).join(" ");
+      // 二面幅＝向かい合う平面どうしの距離。側面図だけだと対角と紛らわしいので、
+      // 側面図（左）と断面図（右）を並べ、寸法は断面図の平面間に入れる。
+      // 右に断面図と寸法値を置くため、側面図は左寄せの固定レイアウトにする
+      const af=26, rc=af/Math.cos(Math.PI/6);   // 二面幅の1/2 と 外接円半径
+      const sx=34, sw=132;                       // 側面図
+      g+=`<rect x="${sx}" y="${cy-af}" width="${sw}" height="${af*2}" ${F}/>`;
+      // 手前の面の両脇に見える隣の面との稜線。これがあると六角の棒だと分かる
+      g+=`<line x1="${sx}" y1="${cy-af*0.42}" x2="${sx+sw}" y2="${cy-af*0.42}" stroke="var(--accent)" stroke-width="1.2" opacity=".45"/>`;
+      g+=`<line x1="${sx}" y1="${cy+af*0.42}" x2="${sx+sw}" y2="${cy+af*0.42}" stroke="var(--accent)" stroke-width="1.2" opacity=".45"/>`;
+      g+=dimH(sx,sx+sw,cy+af+30,"長さ "+d.L+" mm",{ext1:cy+af,ext2:cy+af,above:false});
+      // 断面図（正六角形。平面を上下に向けるため角度は 0°,60°,… とする）
+      const hx=sx+sw+60;
+      const pts=[0,1,2,3,4,5].map(i=>{const a=i*Math.PI/3;
+        return (hx+rc*Math.cos(a))+","+(cy+rc*Math.sin(a));}).join(" ");
       g+=`<polygon points="${pts}" ${F}/>`;
-      g+=dimV(cx-L/2-22,cy-s,cy+s,"二面幅 "+d.S,{ext1:cx-L/2,ext2:cx-L/2,right:false});
+      g+=dimV(hx+rc+16,cy-af,cy+af,"",{ext1:hx+rc*0.5,ext2:hx+rc*0.5,right:true});
+      g+=`<text class="dia-val" x="${hx}" y="${cy-rc-12}" font-size="12" text-anchor="middle">二面幅 ${d.S}</text>`;
+      g+=`<text class="dia-lab" x="${hx}" y="${cy+rc+18}" font-size="11" text-anchor="middle">断面</text>`;
+      svg.innerHTML=g;return;
     }
     g+=dimH(cx-L/2,cx+L/2,cy+R/2+30,"長さ "+d.L+" mm",{ext1:cy+R/2,ext2:cy+R/2,above:false});
   }else if(id==="pipe"){
@@ -4147,19 +4324,30 @@ const REFS={
     return h;
   },
   tact(){
-    let h='<div class="ref-h">加速度の換算（1G = 9806.65 mm/s²）</div>';
-    h+=refTable(["G","mm/s²","m/s²"],
-      [0.1,0.2,0.3,0.5,0.7,1.0,1.5,2.0].map(g=>[g.toFixed(1),Math.round(g*G_MMSS),(g*G_MMSS/1000).toFixed(2)]));
+    let h='<div class="ref-h">設計の進め方</div>';
+    h+=refTable(["手順","やること"],[
+      ["1","距離 L と 目標タクトタイム T を決める（最初はこれだけ）"],
+      ["2","加減速度は 0.5 G あたりから当てる"],
+      ["3","目標に間に合う最高速度 V を出す → 実際に使う V を決める"],
+      ["4","機種の上限（V・a）を入れて成立するか見る"],
+      ["5","届かなければ V・a・T のどれを動かすか決める"]
+    ]);
+    h+='<div class="ref-h">加減速度の目安</div>';
+    h+=refTable(["G","m/s²","目安"],A_PRESETS.map(p=>[p.n,(p.g*G_MMSS/1000).toFixed(2),p.s]));
     h+='<div class="ref-h">台形加減速の基本式</div>';
     h+=refTable(["項目","式"],[
       ["加速時間 ta","V/a"],["加速距離 La","V²/(2a)"],
       ["減速時間 td","V/d"],["減速距離 Ld","V²/(2d)"],
-      ["定速距離 Lc","L−La−Ld"],["定速時間 tc","Lc/V"],
+      ["定速時間 tc","(L−La−Ld)/V"],
       ["総移動時間 T","ta+tc+td"],
       ["三角形時の実到達速度","√(2Lad/(a+d))"],
+      ["最短時間（V無制限）","2√(L·(1/2a+1/2d))"],
+      ["必要な最高速度","(T−√(T²−4kL))/(2k)　k=1/2a+1/2d"],
+      ["必要な加減速度(a=d)","V²/(V·T−L)"],
       ["必要推力 F","m(a+μg·cosθ+g·sinθ)"]
     ]);
-    h+='<div class="ref-note">台形（一定加速度）モデルの標準式です。S字加減速（ジャーク制限）は未対応。実機の整定時間・サーボ応答は含みません。</div>';
+    h+='<div class="ref-note">1 G = 9806.65 mm/s²。台形（一定加速度）モデルで、S字加減速には未対応です。'+
+      '実機では位置決めの整定時間やサーボの応答遅れが加わるので、余裕を見て選定してください。</div>';
     return h;
   },
   beam(){
@@ -4331,7 +4519,7 @@ solveTri();solveTaper();
 buildStrengthChips();calcStrength();
 buildCutChips();renderCutSug();calcCut();
 buildBeamChips();beamShowLoadRows();calcBeam();
-tcShowFields();calcTact();
+tcSyncAccelInputs();buildTactUI();calcTact();
 // 再読込時にブラウザが検索欄の値を復元することがある。復元されたままだと
 // 起動直後の材料一覧が検索結果になってしまうので明示的に空にする
 $("#wtSearch").value="";
