@@ -1336,10 +1336,46 @@ function copyText(text,btn){
     navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
   }else fallbackCopy(text,done);
 }
+/* 画面に出ている結果行をそのまま取り出す。
+   コピー／画像保存の内容を手書きで二重管理すると、画面に足した項目が
+   保存側に載らない取りこぼしが必ず起きるため、表示中のDOMから拾う。 */
+function rowsFromDOM(...sels){
+  const out=[];
+  sels.forEach(sel=>{
+    const el=$(sel);if(!el)return;
+    el.querySelectorAll(".res, .spec").forEach(r=>{
+      const k=r.querySelector(".k"),v=r.querySelector(".v");
+      if(!k||!v)return;
+      const sub=v.querySelector(".sub");
+      const subTxt=sub?sub.textContent.trim().replace(/\s+/g," "):"";
+      let vTxt=v.textContent;
+      if(sub)vTxt=vTxt.replace(sub.textContent,"");
+      vTxt=vTxt.trim().replace(/\s+/g," ");
+      out.push(k.textContent.trim()+": "+vTxt+(subTxt?"　（"+subTxt+"）":""));
+    });
+    el.querySelectorAll(".judge").forEach(j=>{
+      // 判定は「✓ 成立」と説明文が別spanなので、間に区切りを入れないと文字が続いてしまう
+      const parts=[...j.children].map(c=>c.textContent.trim().replace(/\s+/g," ")).filter(Boolean);
+      out.push("判定: "+(parts.length?parts.join("　／　"):j.textContent.trim().replace(/\s+/g," ")));
+    });
+  });
+  return out;
+}
+/* 警告・注意書きも保存対象にする（安全に関わる情報なので落とさない） */
+function notesFromDOM(...sels){
+  const out=[];
+  sels.forEach(sel=>{
+    const el=$(sel);if(!el)return;
+    el.querySelectorAll(".warn").forEach(w=>out.push(w.textContent.trim().replace(/\s+/g," ")));
+  });
+  return out;
+}
 function copyScreenResult(screen,btn){
   const L=LAST[screen];if(!L){return;}
-  const text="【Mech Gauge】"+L.title+"\n"+"-".repeat(28)+"\n"+L.lines.join("\n")+"\n"+"-".repeat(28)+
-    "\n※ Mech Gaugeアプリの計算結果（参考値）。JIS規格・材料力学の一次情報に基づき、この計算が正しいかファクトチェックしてください。";
+  const bar="-".repeat(28);
+  let text="【Mech Gauge】"+L.title+"\n"+bar+"\n"+L.lines.join("\n")+"\n";
+  if(L.notes&&L.notes.length)text+=bar+"\n【注意】\n"+L.notes.map(n=>"・"+n).join("\n")+"\n";
+  text+=bar+"\n※ Mech Gaugeアプリの計算結果（参考値）。JIS規格・材料力学の一次情報に基づき、この計算が正しいかファクトチェックしてください。";
   copyText(text,btn);
 }
 /* =========================================================
@@ -1420,6 +1456,20 @@ function saveScreenImage(screen,btn){
       y+=42*countLines(x,line,W-M*2)+14;
     }
   });
+  y+=14;
+  // 警告・注意書き（安全に関わるので必ず載せる）
+  if(L.notes&&L.notes.length){
+    y+=12;
+    x.fillStyle="#9A6B00";x.font="bold 28px sans-serif";x.fillText("注意",M,y);y+=38;
+    x.font="26px sans-serif";
+    L.notes.forEach(nt=>{
+      const t="・"+nt;
+      x.fillStyle="#7A5600";
+      wrapText(x,t,M,y,W-M*2,34);
+      y+=34*countLines(x,t,W-M*2)+10;
+    });
+    y+=8;
+  }
   y+=20;
   const diagrams=screenDiagrams(screen).map(svgForPrint).filter(Boolean);
   const footer=()=>{
@@ -1613,7 +1663,7 @@ function render(){
       "最大（穴max−軸min）: "+(maxC>=0?"すきま ":"しめしろ ")+Math.abs(maxC).toFixed(1)+" μm",
       "最小（穴min−軸max）: "+(minC>=0?"すきま ":"しめしろ ")+Math.abs(minC).toFixed(1)+" μm",
       "根拠: ISO 286-1 / JIS B 0401"
-    ]};
+    ],notes:notesFromDOM("#fitWarn")};
   pushHistory({s:"fit",
     t:"φ"+D+" "+state.hole.letter+state.hole.grade+" / "+state.shaft.letter.toLowerCase()+state.shaft.grade,
     d:kind+"　最大"+maxC.toFixed(1)+" / 最小"+minC.toFixed(1)+" μm",
@@ -1844,18 +1894,15 @@ function renderScrew(){
   $("#screwNote").innerHTML="※ "+S.name+"。"+S.note+" いずれも<b>参考値</b>です。";
   drawScrewPicture(d,d2,d1,P,S.angle,drill);
   LAST.screw={title:"ねじ諸元　"+name+"（"+S.name+"）",
-    lines:[
-      "外径（基準）d: "+r3(d)+" mm",
-      (S.tpi?"山数: "+tpiTxt+"（ピッチ換算 "+r3(P)+" mm）":"ピッチ P: "+P+" mm"),
-      "有効径 d2: "+r3(d2)+" mm",
-      "谷径 d1: "+r3(d1)+" mm",
-      "ねじ山角度: "+S.angle+"°",
-      (fixedDrill!=null?"規定の下穴（Rc用）: "+drill.toFixed(1)+" mm":
-        "タップ下穴（ひっかかり率"+screwState.engage+"%）: "+drill.toFixed(3)+" mm　（推奨ドリル径 "+nearestDrill(drill)+" mm）"),
-      (S.hex&&S.hex[name]?"六角二面幅: "+S.hex[name]+" mm":null),
-      (S.hexKey&&S.hexKey[name]?"六角穴レンチ: "+S.hexKey[name]+" mm":null),
-      "根拠: "+S.name
-    ].filter(Boolean)};
+    lines:["【入力条件】",
+      "系列: "+S.name,
+      "呼び: "+name,
+      (fixedDrill==null?"ひっかかり率: "+screwState.engage+" %":null),
+      "【計算結果】"].filter(Boolean)
+      .concat(rowsFromDOM("#screwSpecs"))
+      .concat(fixedDrill==null||S.taper?["【タップ下穴】"].concat(rowsFromDOM("#screwDrill")):[])
+      .concat(["根拠: "+S.name+"。下穴径 = 呼び径 − 1.299 × ピッチ × (ひっかかり率/100)"]),
+    notes:notesFromDOM("#screwWarn")};
   pushHistory({s:"screw",t:name,
     d:S.name+"　下穴 "+(fixedDrill!=null?drill.toFixed(1):nearestDrill(drill))+" mm"+
       (fixedDrill!=null?"":"（ひっかかり率"+screwState.engage+"%）")+" ／ 有効径 "+r3(d2)+" mm",
@@ -2373,18 +2420,18 @@ function calcBolt(){
 
   drawBoltPicture(d,B.shear,Ff);
   LAST.strength={title:"ボルト強度　"+row[0]+" "+B.grade+(n>1?"　"+n+"本":""),
-    lines:["ねじの呼び: "+row[0]+"（P="+P+" mm／"+(B.series==="mf"?"メートル細目":"メートル並目")+"）",
+    lines:["【入力条件】",
+      "ねじの呼び: "+row[0]+"（P="+P+" mm／"+(B.series==="mf"?"メートル細目":"メートル並目")+"）",
       "強度区分: "+B.grade,
-      "有効断面積 As: "+As.toFixed(1)+" mm²（JIS B 1082）",
-      "引張強さ Rm: "+g.Rm+" MPa／耐力 Rp0.2: "+g.Ry+" MPa（JIS B 1051）",
-      "締付軸力 Ff: "+fN(Ff)+"（耐力の"+B.pre+"%）",
-      "締付トルク T: "+T.toFixed(1)+" N・m（K="+B.K+"）",
-      "締付時の相当応力: "+eq.toFixed(0)+" MPa（耐力比"+(eq/g.Ry*100).toFixed(0)+"%）",
-      "許容引張荷重/1本: "+fN(Pa)+"（耐力基準・安全率"+S+"）",
-      "許容せん断荷重/1本: "+fN(Va)+"（ミーゼス τa="+taua.toFixed(0)+" MPa・"+(B.shear==="thread"?"ねじ部":"円筒部")+"）",
-      (n>1?"ボルト本数: "+n+" 本／許容引張 合計 "+fN(Pa*n)+"／許容せん断 合計 "+fN(Va*n):null),
-      "根拠: JIS B 1051 / B 1054-1 / B 1082 / B 1083、せん断はミーゼス基準"
-    ].filter(Boolean)};
+      "締付率: 耐力の "+B.pre+" %",
+      "トルク係数 K: "+B.K,
+      "せん断面の位置: "+(B.shear==="thread"?"ねじ部":"円筒部"),
+      "安全率 S: "+S,
+      "ボルト本数: "+n+" 本",
+      "【計算結果】"]
+      .concat(rowsFromDOM("#boltOut"))
+      .concat(["根拠: JIS B 1051 / B 1054-1 / B 1082 / B 1083。許容荷重は耐力(Rp0.2)基準（破断基準ではない）、せん断はミーゼス τa=Rp0.2/(√3·S)"]),
+    notes:notesFromDOM("#boltWarn")};
   pushHistory({s:"strength",t:row[0]+" "+B.grade+(n>1?" ×"+n:""),
     d:"締付軸力 "+fN(Ff)+" ／ 締付トルク "+T.toFixed(1)+" N·m（K="+B.K+"）",
     st:{mode:"bolt",sf:S,bolt:Object.assign({},B)}});
@@ -2486,16 +2533,17 @@ function calcShaft(){
 
   drawShaftPicture(d,di,H.key,Tnm,H.M);
   LAST.strength={title:"軸の強度　φ"+d+(di?"/φ"+di:"")+"　"+m.n,
-    lines:["形状: "+(H.shape==="hollow"?"中空丸軸（外径φ"+d+" / 内径φ"+di+"）":"中実丸軸（外径φ"+d+"）")+(H.key?"／キー溝あり(×0.75)":""),
-      "材料: "+m.n,
-      "断面係数 Z: "+Z.toFixed(0)+" mm³／極断面係数 Zp: "+Zp.toFixed(0)+" mm³",
-      "ねじりモーメント T: "+Tnm.toFixed(1)+" N・m",
-      (M>0?"曲げモーメント M: "+H.M+" N・m":null),
-      "相当曲げ応力 σe: "+sigE.toFixed(1)+" MPa／相当ねじり応力 τe: "+tauE.toFixed(1)+" MPa",
-      "許容曲げ応力 σa: "+siga.toFixed(1)+" MPa／許容せん断応力 τa: "+taua.toFixed(1)+" MPa（安全率"+Sef+"）",
-      "必要な軸径: φ"+dReq.toFixed(1)+" mm　→ "+(ok?"φ"+d+"で成立":"φ"+d+"では不足"),
-      "根拠: 材料力学（曲げ・ねじりの相当応力）"
-    ].filter(Boolean)};
+    lines:["【入力条件】",
+      "形状: "+(H.shape==="hollow"?"中空丸軸（外径 φ"+d+" / 内径 φ"+di+"）":"中実丸軸（外径 φ"+d+"）"),
+      "キー溝: "+(H.key?"あり（断面 ×0.75）":"なし"),
+      "材料: "+m.n+"（"+m.std+"）",
+      (H.tin==="power"?"伝達動力 P: "+H.pw+" kW／回転数 N: "+H.rpm+" min⁻¹":"ねじりモーメント T: "+H.tq+" N・m"),
+      "曲げモーメント M: "+H.M+" N・m",
+      "安全率 S: "+Sef+(m.brittle?"（脆性材のため指定+1）":""),
+      "【計算結果】"]
+      .concat(rowsFromDOM("#shaftOut"))
+      .concat(["根拠: 材料力学。相当曲げ Me=(M+√(M²+T²))/2、相当ねじり Te=√(M²+T²)"]),
+    notes:notesFromDOM("#shaftWarn")};
   pushHistory({s:"strength",t:"φ"+d+(di?"/φ"+di:"")+" "+m.n,
     d:"T "+Tnm.toFixed(1)+" N·m ／ τe "+tauE.toFixed(1)+" MPa ／ 必要径 φ"+dReq.toFixed(1)+"　"+(ok?"成立":"不足"),
     st:{mode:"shaft",sf:S,shaft:Object.assign({},H)}});
@@ -2738,12 +2786,16 @@ function calcCut(){
       st:JSON.parse(JSON.stringify(cutState))});
     drawCutMill(c);
     LAST.cut={title:"切削条件　フライス φ"+c.D+"×"+c.z+"枚刃　"+m.id,
-      lines:["工具径 D: "+c.D+" mm／刃数 z: "+c.z,"切削速度 Vc: "+c.Vc+" m/min／1刃送り fz: "+c.fz+" mm/刃",
+      lines:["【入力条件】",
+        "被削材: "+m.id+"（"+m.n+"）／工具材種: "+({hss:"ハイス",ca:"超硬",co:"コーティング超硬"}[cutState.tool]),
+        "工具径 D: "+c.D+" mm／刃数 z: "+c.z,
+        "切削速度 Vc: "+c.Vc+" m/min／1刃送り fz: "+c.fz+" mm/刃",
         "軸方向切込み ap: "+c.ap+" mm／径方向切込み ae: "+c.ae+" mm",
-        "回転数 n: "+Math.round(n)+" min⁻¹","送り速度 Vf: "+Math.round(Vf)+" mm/min",
-        "材料除去率 Q: "+Q.toFixed(1)+" cm³/min","所要動力 Pc: "+Pc.toFixed(2)+" kW（kc="+m.kc+" MPa）",
-        (c.L>0?"加工時間（1パス）: "+fmtMin(c.L/Vf):null),
-        "根拠: Vc=πDn/1000 等の切削理論式"].filter(Boolean)};
+        (c.L>0?"加工長 L: "+c.L+" mm":null),
+        "【計算結果】"].filter(Boolean)
+        .concat(rowsFromDOM("#cutOut"))
+        .concat(["根拠: Vc=πDn/1000、Vf=fz·z·n、Pc=ap·ae·Vf·kc/(60×10⁶·η)　kc="+m.kc+" MPa"]),
+      notes:notesFromDOM("#cutWarn")};
   }else if(cutState.mode==="drill"){
     const c=cutState.drill;
     if(!(c.D>0&&c.Vc>0&&c.f>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・Vc・f を正しく入力してください。</div>';return;}
@@ -2764,12 +2816,15 @@ function calcCut(){
       st:JSON.parse(JSON.stringify(cutState))});
     drawCutDrill(c,tip);
     LAST.cut={title:"切削条件　ドリル φ"+c.D+"　"+m.id,
-      lines:["ドリル径 D: "+c.D+" mm／先端角: "+c.angle+"°",
-        "切削速度 Vc: "+c.Vc+" m/min／送り f: "+c.f+" mm/rev","穴深さ: "+c.dep+" mm",
-        "回転数 n: "+Math.round(n)+" min⁻¹","送り速度 Vf: "+Math.round(Vf)+" mm/min",
-        "先端円錐の長さ: "+tip.toFixed(2)+" mm／必要移動量: "+travel.toFixed(1)+" mm",
-        "1穴の加工時間: "+fmtMin(travel/Vf),"所要動力 Pc: "+Pc.toFixed(2)+" kW",
-        "根拠: Vc=πDn/1000 等の切削理論式"]};
+      lines:["【入力条件】",
+        "被削材: "+m.id+"（"+m.n+"）／工具材種: "+({hss:"ハイス",ca:"超硬",co:"コーティング超硬"}[cutState.tool]),
+        "ドリル径 D: "+c.D+" mm／先端角: "+c.angle+"°",
+        "切削速度 Vc: "+c.Vc+" m/min／送り f: "+c.f+" mm/rev",
+        "穴深さ: "+c.dep+" mm",
+        "【計算結果】"]
+        .concat(rowsFromDOM("#cutOut"))
+        .concat(["根拠: Vc=πDn/1000、Vf=f·n、先端円錐長 Lp=D/2·tan(90°−先端角/2)　kc="+m.kc+" MPa"]),
+      notes:notesFromDOM("#cutWarn")};
   }else{
     const c=cutState.turn;
     if(!(c.D>0&&c.Vc>0&&c.f>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・Vc・f を正しく入力してください。</div>';return;}
@@ -2789,13 +2844,16 @@ function calcCut(){
       st:JSON.parse(JSON.stringify(cutState))});
     drawCutTurn(c,Rz);
     LAST.cut={title:"切削条件　旋盤 φ"+c.D+"　"+m.id,
-      lines:["加工径 D: "+c.D+" mm","切削速度 Vc: "+c.Vc+" m/min／送り f: "+c.f+" mm/rev",
+      lines:["【入力条件】",
+        "被削材: "+m.id+"（"+m.n+"）／工具材種: "+({hss:"ハイス",ca:"超硬",co:"コーティング超硬"}[cutState.tool]),
+        "加工径 D: "+c.D+" mm",
+        "切削速度 Vc: "+c.Vc+" m/min／送り f: "+c.f+" mm/rev",
         "切込み ap: "+c.ap+" mm／ノーズR: "+c.R+" mm",
-        "回転数 n: "+Math.round(n)+" min⁻¹","送り速度 Vf: "+Math.round(Vf)+" mm/min",
-        "理論粗さ Rz: "+Rz.toFixed(1)+" μm（Ra≈"+(Rz/4).toFixed(1)+" μm）",
-        "材料除去率 Q: "+Q.toFixed(1)+" cm³/min","所要動力 Pc: "+Pc.toFixed(2)+" kW",
-        (c.L>0?"加工時間（1パス）: "+fmtMin(c.L/Vf):null),
-        "根拠: Vc=πDn/1000 等の切削理論式"].filter(Boolean)};
+        (c.L>0?"加工長 L: "+c.L+" mm":null),
+        "【計算結果】"].filter(Boolean)
+        .concat(rowsFromDOM("#cutOut"))
+        .concat(["根拠: Vc=πDn/1000、理論粗さ Rz≈f²/(8·Rε)　kc="+m.kc+" MPa"]),
+      notes:notesFromDOM("#cutWarn")};
   }
   $("#cutOut").innerHTML=h;$("#cutWarn").innerHTML=w;
 }
@@ -3153,15 +3211,23 @@ function calcBeam(){
   drawBeamCase(bc,bc.pos?a/b.L:null);
   drawBeamSection();
   LAST.beam={title:"梁のたわみ　"+sec.name+"　"+bc.n,
-    lines:["断面: "+sec.name+"（I="+(sec.I/1e4).toFixed(1)+" cm⁴／Z="+(sec.Z/1e3).toFixed(1)+" cm³）",
-      "支持条件・荷重: "+bc.n,"スパン L: "+b.L+" mm",
-      "材料: "+m.n+"／安全率: "+b.sf,
-      "最大たわみ δ: "+delta.toFixed(3)+" mm"+(dLim!=null?"（許容 "+dLim.toFixed(2)+" mm = L/"+b.defl+"）":""),
-      "最大曲げモーメント: "+(Mmax/1000).toFixed(1)+" N・m（位置: "+bc.mAt+"）",
-      "曲げ応力 σ: "+sig.toFixed(1)+" MPa（許容 "+siga.toFixed(1)+" MPa）",
-      "判定: "+(ok?"成立":"不足")+"（たわみ"+(okD?"OK":"超過")+"／応力"+(okS?"OK":"超過")+"）",
-      "根拠: 材料力学の標準たわみ式（"+bc.n+"）"
-    ]};
+    lines:["【入力条件】",
+      "断面: "+sec.name,
+      (b.src==="steel"?"種別: "+(BEAM_FAMS.find(f=>f.id===b.fam)||{}).n:null),
+      "支持条件・荷重: "+bc.n,
+      "スパン L: "+b.L+" mm",
+      (bc.load==="P"?"集中荷重 P: "+b.P+" N":null),
+      (bc.load==="w"?"等分布荷重 w: "+b.w+" N/m":null),
+      (bc.load==="M"?"モーメント M: "+b.M0+" N・m":null),
+      (bc.pos?"荷重位置 a: "+b.a+" mm（左端から）":null),
+      "材料: "+m.n+"（"+m.std+"、E="+m.E+" GPa）",
+      "安全率 S: "+Sef+(m.brittle?"（脆性材のため指定+1）":""),
+      "たわみ許容基準: "+(b.defl>0?"L/"+b.defl:"指定なし"),
+      "【計算結果】"].filter(Boolean)
+      .concat(b.src==="steel"?rowsFromDOM("#beamSecInfo"):[])
+      .concat(rowsFromDOM("#beamOut"))
+      .concat(["根拠: 材料力学の標準たわみ式（"+bc.n+"）。自重は含まない"]),
+    notes:notesFromDOM("#beamWarn")};
   pushHistory({s:"beam",t:sec.name,
     d:bc.n+"　δ "+delta.toFixed(2)+" mm ／ σ "+sig.toFixed(1)+" MPa　"+(ok?"成立":"不足"),
     st:JSON.parse(JSON.stringify(beamState))});
@@ -3435,18 +3501,24 @@ function calcTact(){
   out.innerHTML=h;warn.innerHTML=w;
   drawTact(ta,tc,td,triangle?Vpeak:(V!=null?V:Vpeak));
   $("#tcAccelConv").textContent="a = "+(a/G_MMSS).toFixed(3)+" G = "+(a/1000).toFixed(3)+" m/s²　／　d = "+(d/G_MMSS).toFixed(3)+" G = "+(d/1000).toFixed(3)+" m/s²";
-  LAST.tact={title:"タクトタイム計算　L="+L+"mm",
-    lines:["モード: "+({time:"時間を計算",reqV:"最高速度を計算",reqA:"加減速度を計算"}[s.mode]),
+  // 推力は結果の一部なので、保存内容を組み立てる前に計算しておく
+  calcTactForce(a,d);
+  LAST.tact={title:"タクトタイム計算　L="+L+" mm",
+    lines:["【入力条件】",
+      "モード: "+({time:"時間を計算",reqV:"最高速度を計算",reqA:"加減速度を計算"}[s.mode]),
       "移動距離 L: "+L+" mm",
       (s.mode!=="reqV"?"最高速度 V: "+s.V+" mm/s":null),
-      (s.mode!=="time"?"目標タクトタイムT: "+s.T+" s":null),
-      (s.mode!=="reqA"?"加速度 a: "+(a/G_MMSS).toFixed(3)+" G（"+(a/1000).toFixed(2)+" m/s²）／減速度 d: "+(d/G_MMSS).toFixed(3)+" G（"+(d/1000).toFixed(2)+" m/s²）":null),
-      (T!=null?"タクトタイム T: "+T.toFixed(3)+" s":null),
-      (s.mode==="reqV"&&V!=null?"必要な最高速度 V: "+V.toFixed(1)+" mm/s":null),
-      (s.mode==="reqA"?"必要な加減速度: "+(V*V/(V*T-L)/G_MMSS).toFixed(3)+" G":null),
-      "根拠: 台形加減速の標準式（一定加速度モデル）"
-    ].filter(Boolean)};
-  calcTactForce(a,d);
+      (s.mode!=="time"?"目標タクトタイム T: "+s.T+" s":null),
+      (s.mode!=="reqA"?"加速度 a: "+(a/G_MMSS).toFixed(3)+" G（"+(a/1000).toFixed(2)+" m/s²）":null),
+      (s.mode!=="reqA"?"減速度 d: "+(d/G_MMSS).toFixed(3)+" G（"+(d/1000).toFixed(2)+" m/s²）"+(s.sameAD?"（加速と同じ）":""):null),
+      "可搬質量 m: "+s.mass+" kg／摩擦係数 μ: "+s.mu+"／傾斜角 θ: "+s.theta+"°",
+      "【計算結果】"]
+      .filter(Boolean)
+      .concat(rowsFromDOM("#tactOut"))
+      .concat(["【必要推力】"])
+      .concat(rowsFromDOM("#tactForceOut"))
+      .concat(["根拠: 台形加減速の標準式（一定加速度モデル）／F = m(a + μg·cosθ + g·sinθ）"]),
+    notes:notesFromDOM("#tactWarn")};
   pushHistory({s:"tact",t:"L"+L+"mm "+({time:"T計算",reqV:"V逆算",reqA:"a逆算"}[s.mode]),
     d:(T!=null?"T "+T.toFixed(3)+"s ":"")+(s.mode==="reqV"&&V!=null?"必要V "+V.toFixed(1)+"mm/s":""),
     st:JSON.parse(JSON.stringify(s))});
@@ -3685,12 +3757,15 @@ function calcWeight(){
     warn.innerHTML=w;
     drawWeightPic({sh,d});
     LAST.weight={title:"重量計算　"+sh.desc(d),
-      lines:["形状: "+sh.desc(d)+"（5面塞ぎ＋フタ）","材料: "+wtState.mat+"（密度 "+rho+" g/cm³）"]
-        .concat(parts.map(pt=>pt.n+"×"+pt.q+": "+(kgOf(pt.v)*pt.q).toFixed(3)+" kg（"+pt.s+" mm）"))
-        .concat(["5面塞ぎ（フタなし）: "+body.toFixed(3)+" kg","フタ: "+lid.toFixed(3)+" kg",
-          "フタ込み合計（1個）: "+one.toFixed(3)+" kg",
-          (qty!==1?"個数: "+qty+" 個／合計: "+(one*qty).toFixed(3)+" kg":null),
-          "根拠: 各板の体積×密度（板の重なりなし）"].filter(Boolean))};
+      lines:["【入力条件】",
+        "形状: "+sh.n,
+        "外寸: W"+d.W+" × D"+d.D+" × H"+d.H+" mm／板厚 t: "+d.T+" mm",
+        "材料: "+wtState.mat+"（密度 "+rho+" g/cm³）",
+        "個数: "+qty+" 個",
+        "【計算結果】"]
+        .concat(rowsFromDOM("#wtOut"))
+        .concat(["根拠: 各板の体積×密度。板取りは 底板／長手側板2枚／短手側板2枚 が重ならない構成（二重計上なし）"]),
+      notes:notesFromDOM("#wtWarn")};
     pushHistory({s:"weight",t:sh.desc(d),
       d:wtState.mat+"　5面 "+body.toFixed(3)+" kg ／ フタ込み "+one.toFixed(3)+" kg",
       st:JSON.parse(JSON.stringify(wtState))});
@@ -3730,13 +3805,15 @@ function calcWeight(){
   warn.innerHTML=w;
   drawWeightPic({sh,d,area,len});
   LAST.weight={title:"重量計算　"+name,
-    lines:["形状: "+name,"材料: "+wtState.mat+"（密度 "+rho+" g/cm³）",
-      "断面積: "+(area/100).toFixed(2)+" cm²","長さ: "+len+" mm",
-      "体積（1個）: "+volCm3.toFixed(1)+" cm³",
-      "質量（1個）: "+kg1.toFixed(3)+" kg",
-      (qty!==1?"個数: "+qty+" 個／合計質量: "+total.toFixed(3)+" kg":null),
-      "単位長さあたり: "+(kg1/len*1000).toFixed(3)+" kg/m",
-      "根拠: 体積×密度（断面積×長さ）"].filter(Boolean)};
+    lines:["【入力条件】",
+      "形状: "+sh.n,
+      (sh.steel?"型鋼: "+(BEAM_FAMS.find(f=>f.id===wtState.fam)||{}).n+"　"+name:"寸法: "+name),
+      "材料: "+wtState.mat+"（密度 "+rho+" g/cm³）",
+      "個数: "+qty+" 個",
+      "【計算結果】"]
+      .concat(rowsFromDOM("#wtOut"))
+      .concat(["根拠: 体積×密度（断面積×長さ）"]),
+    notes:notesFromDOM("#wtWarn")};
   pushHistory({s:"weight",t:name,
     d:wtState.mat+"　"+kg1.toFixed(3)+" kg/個"+(qty!==1?" ／ 合計 "+total.toFixed(3)+" kg":""),
     st:JSON.parse(JSON.stringify(wtState))});
