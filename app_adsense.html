@@ -1176,7 +1176,7 @@ body.adsense-on #adInline{display:block;}
       <b>広告配信のために Google へ送られる情報に、本アプリへ入力した寸法・材質・計算結果は含まれません。</b></p>
     </div>
     <p class="note"><b>お問い合わせ</b><br>
-    <span id="contactAddr">（連絡先メールアドレスをここに記載してください）</span></p>
+    mechagauge.app@gmail.com<span id="ppFullLink"></span></p>
   </div>
 </main>
 
@@ -4592,6 +4592,10 @@ function initAdsense(){
   const off=id=>{const e=$("#"+id);if(e)e.style.display="none";};
   const on =id=>{const e=$("#"+id);if(e)e.style.display="";};
   off("adNoteSponsor");on("adNoteAdsense");on("ppAdsense");
+  // 審査でも参照される全文ページへの導線（アドセンス版だけ出す）
+  const lk=$("#ppFullLink");
+  if(lk)lk.innerHTML='<br><a href="privacy_policy_adsense.html" target="_blank" rel="noopener" '+
+    'style="color:var(--accent)">プライバシーポリシー全文を開く</a>';
 
   const meta=document.createElement("meta");
   meta.name="google-adsense-account";meta.content=ADSENSE.client;
