@@ -328,6 +328,39 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
 #adBanner .ad-mark{align-self:flex-start;margin:4px 6px 0 0;font-size:.58rem;color:var(--ink-dim);
   border:1px solid var(--line);border-radius:4px;padding:1px 4px;flex:0 0 auto;}
 
+/* ---- みんなの声（掲示板） ---- */
+.bd-note{font-size:.72rem;color:var(--ink-dim);line-height:1.7;background:var(--panel2);
+  border:1px solid var(--line);border-radius:11px;padding:9px 11px;margin-bottom:10px;}
+.bd-note b{color:var(--ink);}
+.bd-ta{width:100%;min-height:96px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:12px;color:var(--ink);font:inherit;font-size:.95rem;line-height:1.6;
+  padding:10px;resize:vertical;-webkit-appearance:none;}
+.bd-ta:focus{outline:none;border-color:var(--accent);}
+.bd-count{font-size:.68rem;color:var(--ink-dim);text-align:right;margin-top:3px;}
+.bd-count.over{color:var(--ng);font-weight:700;}
+.bd-msg{font-size:.78rem;line-height:1.6;margin-top:8px;padding:8px 10px;border-radius:10px;display:none;}
+.bd-msg.on{display:block;}
+.bd-msg.ok{color:var(--ok);border:1px solid var(--ok);background:rgba(52,211,153,.1);}
+.bd-msg.ng{color:var(--ng);border:1px solid var(--ng);background:rgba(248,113,113,.1);}
+.bd-list{display:flex;flex-direction:column;gap:10px;}
+.bd-post{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:10px 12px;}
+.bd-post.reply{margin-left:18px;border-left:3px solid var(--accent);}
+.bd-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px;}
+.bd-name{font-size:.86rem;font-weight:800;}
+.bd-when{font-size:.66rem;color:var(--ink-dim);}
+.bd-tag{font-size:.62rem;color:var(--ink-dim);border:1px solid var(--line);
+  border-radius:5px;padding:1px 5px;}
+.bd-body{font-size:.92rem;line-height:1.75;white-space:pre-wrap;word-break:break-word;}
+.bd-acts{display:flex;gap:8px;margin-top:7px;}
+.bd-acts button{font:inherit;font-size:.7rem;font-weight:700;color:var(--ink-dim);
+  background:none;border:1px solid var(--line);border-radius:8px;padding:4px 9px;min-height:32px;}
+.bd-acts button:active{transform:scale(.96);}
+.bd-acts button.done{color:var(--ok);border-color:var(--ok);}
+.bd-replying{font-size:.72rem;color:var(--accent);margin-bottom:6px;display:none;}
+.bd-replying.on{display:flex;gap:8px;align-items:center;}
+.bd-replying button{font:inherit;font-size:.66rem;color:var(--ink-dim);background:none;
+  border:1px solid var(--line);border-radius:7px;padding:2px 7px;min-height:26px;}
+
 /* ---- 広告：Googleアドセンス版で使う枠 ----
    アドセンス版（app_adsense.html）でのみ body に adsense-on が付く。
    固定オーバーレイは自作せず、アンカー広告はGoogleの自動広告に任せる
@@ -1101,11 +1134,53 @@ body.adsense-on #adInline{display:block;}
 
 </main>
 
+<!-- ================= みんなの声（掲示板） =================
+     この画面だけは計算と違い、書き込んだ内容が外部（作者のGoogleスプレッドシート）
+     へ送られる。計算値は一切送らない。免責画面のポリシーとあわせて明記している。 -->
+<main class="screen" id="screen-board">
+
+  <div class="card">
+    <h2>みんなの声・要望</h2>
+    <p class="bd-note">現場で使ってみて気づいたこと、ほしい機能、計算がおかしいと思った点などを書いてください。
+    <b>アカウント登録は要りません。名前は空でも投稿できます（「名無し」になります）。</b><br>
+    ここに書いた内容だけが作者へ送られます。<b>各計算画面に入力した寸法や材質は一切送信されません。</b></p>
+
+    <div class="bd-replying" id="bdReplying">
+      <span id="bdReplyTo"></span><button id="bdReplyCancel">返信をやめる</button>
+    </div>
+
+    <div class="f-grid">
+      <div class="f-row f-full"><span class="lab">お名前（任意）<span class="why">空欄なら「名無し」で投稿されます</span></span>
+        <div class="ipt"><input id="bdName" class="num" type="text" maxlength="20" placeholder="名無し"></div></div>
+    </div>
+    <textarea class="bd-ta" id="bdBody" maxlength="400" placeholder="例）重量計算に六角パイプも入れてほしい／切削条件のfzの目安がステンレスだと高い気がする" style="margin-top:8px"></textarea>
+    <div class="bd-count" id="bdCount">0 / 400</div>
+    <button class="copy-btn" id="bdSend">送信する</button>
+    <div class="bd-msg" id="bdMsg"></div>
+  </div>
+
+  <div class="card">
+    <div class="dia-head" style="display:flex;align-items:center;justify-content:space-between">
+      <h2 style="margin:0">投稿一覧</h2>
+      <button class="chip" id="bdReload">🔄 更新</button>
+    </div>
+    <div class="bd-list" id="bdList" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <p class="note">投稿は公開されます。<b>氏名・電話番号・勤務先など、知られたくない情報は書かないでください。</b><br>
+    宣伝目的の投稿やURLを含む投稿は、確認するまで表示されません。不適切な投稿は「通報」から知らせてください。一定数集まると自動で非表示になります。<br>
+    投稿の削除を希望される場合は、免責画面のお問い合わせ先までご連絡ください。</p>
+  </div>
+
+</main>
+
 <!-- ================= 使い方・単位 ================= -->
 <main class="screen" id="screen-about">
   <div class="card">
     <h2>このアプリについて</h2>
-    <p class="formula">機械加工・検査の現場で使う計算をまとめた道具箱です。<b>すべての計算は端末内で完結</b>し、入力した数値が外部に送信されることはありません。</p>
+    <p class="formula">機械加工・検査の現場で使う計算をまとめた道具箱です。<b>すべての計算は端末内で完結</b>し、入力した数値が外部に送信されることはありません。<br>
+    外部と通信するのは「みんなの声・要望」に書き込んだときだけで、送られるのはその本文と名前だけです。</p>
   </div>
   <div class="card">
     <h2>画面の切り替え</h2>
@@ -1169,6 +1244,10 @@ body.adsense-on #adInline{display:block;}
     すべての計算は端末の中だけで行っています。入力した寸法・材質・計算結果を作者のサーバーへ送信することはありません。</p>
     <p class="note"><b>端末への保存</b><br>
     計算履歴と画面の設定は、お使いのブラウザのローカルストレージにのみ保存されます。ブラウザの閲覧データを消去すればいつでも削除できます。作者がその内容を見ることはできません。</p>
+    <p class="note"><b>「みんなの声・要望」について</b><br>
+    この画面から送信した<b>お名前と本文だけ</b>が、作者が管理するGoogleスプレッドシートへ保存され、他の利用者にも公開されます。<b>各計算画面に入力した寸法・材質・計算結果が送られることはありません。</b><br>
+    連続投稿を防ぐため、端末ごとにランダムな識別子（個人を特定しないもの）を作って一緒に送っています。ブラウザの閲覧データを消去すればリセットされます。<br>
+    投稿の削除を希望される場合は、下記のお問い合わせ先までご連絡ください。</p>
     <!-- アドセンス版でのみ表示 -->
     <div id="ppAdsense" style="display:none">
       <p class="note"><b>広告配信について</b><br>
@@ -4183,6 +4262,7 @@ const SCREENS=[
   {id:"weight", icon:"⚖", name:"重量計算", sub:"板・棒・パイプ・型鋼／材料別の密度"}
 ];
 const INFO_SCREENS=[
+  {id:"board", icon:"💬", name:"みんなの声・要望", sub:"使ってみた感想・ほしい機能を書く"},
   {id:"about", icon:"ⓘ", name:"使い方・単位について"},
   {id:"legal", icon:"⚖", name:"免責・規格の出典"}
 ];
@@ -4207,6 +4287,8 @@ function buildMenu(){
 }
 
 function showScreen(id){
+  // どの機能を見ていて要望を書いたのかを掲示板に添えるため、直前の計算画面を覚えておく
+  if(id==="board"&&SCREENS.some(s=>s.id===curScreen))curScreenBefore=curScreen;
   curScreen=id;
   const all=SCREENS.concat(INFO_SCREENS);
   all.forEach(s=>$("#screen-"+s.id).classList.toggle("active",s.id===id));
@@ -4221,6 +4303,8 @@ function showScreen(id){
     const idx=el._items.findIndex(it=>it.value===el._value);
     if(idx>=0){el.scrollTop=idx*ITEM_H;markWheel(el,idx);}
   });
+  // 掲示板は開いたときだけ取りに行く。起動時に全員が通信するのを避けるため
+  if(id==="board")bdLoad(false);
   renderRef();
 }
 
@@ -4580,6 +4664,195 @@ function initBanner(){
   if(ADS.length>1)setInterval(()=>{bannerIdx=(bannerIdx+1)%ADS.length;showBanner(bannerIdx);},AD_CONFIG.banner.rotateSeconds*1000);
 }
 
+/* =========================================================
+   みんなの声（掲示板）
+   保存先は作者のGoogleスプレッドシート。窓口はApps Scriptのウェブアプリだけ。
+   ★ URLを差し替えるときはここ1か所だけ直せばよい。
+   送信は Content-Type を text/plain にしている。application/json にすると
+   ブラウザがプリフライト(OPTIONS)を送るが、Apps Script はそれに応答できず失敗する。
+   ========================================================= */
+const BOARD = {
+  url: "",          // ← Apps Scriptのデプロイ先 https://script.google.com/macros/s/××××/exec
+  maxBody: 400
+};
+let bdPosts=[], bdLoaded=false, bdReplyTo="", bdBusy=false;
+// 掲示板を開く直前に見ていた計算画面。どの機能への要望かを添えるために覚えておく
+let curScreenBefore="general";
+
+/** 連投判定用の端末ID。個人を特定するものではなく、消せばリセットされる */
+function bdClientId(){
+  let id=null;
+  try{ id=localStorage.getItem("mg_board_client"); }catch(e){}
+  if(!/^[A-Za-z0-9_-]{8,64}$/.test(id||"")){
+    id="c"+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+    try{ localStorage.setItem("mg_board_client",id); }catch(e){}
+  }
+  return id;
+}
+function bdSay(text,kind){
+  const el=$("#bdMsg");
+  el.textContent=text;
+  el.className="bd-msg on "+(kind||"ok");
+  if(kind==="ok")setTimeout(()=>{el.className="bd-msg";},6000);
+}
+function bdWhen(iso){
+  const d=new Date(iso);
+  if(isNaN(d))return "";
+  const p=x=>String(x).padStart(2,"0");
+  const now=new Date();
+  const sameDay=d.toDateString()===now.toDateString();
+  return (sameDay?"今日":(d.getMonth()+1)+"/"+d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());
+}
+function bdScreenName(id){
+  const s=SCREENS.find(x=>x.id===id);
+  return s?s.name:"";
+}
+
+async function bdLoad(force){
+  const box=$("#bdList");
+  if(!BOARD.url){
+    box.innerHTML='<div class="empty">掲示板の接続先が未設定です。</div>';
+    return;
+  }
+  if(bdLoaded&&!force)return;
+  box.innerHTML='<div class="empty">読み込み中…</div>';
+  try{
+    const r=await fetch(BOARD.url+"?action=list",{method:"GET"});
+    const j=await r.json();
+    if(!j.ok)throw new Error(j.error||"取得に失敗しました");
+    bdPosts=j.posts||[];
+    bdLoaded=true;
+    bdRender();
+  }catch(e){
+    // 計算機能はすべて端末内で動くので、ここが落ちてもアプリ自体は使える
+    box.innerHTML='<div class="empty">投稿を読み込めませんでした。<br>'+
+      '通信環境を確認して「🔄 更新」を押してください。</div>';
+  }
+}
+
+function bdRender(){
+  const box=$("#bdList");
+  if(!bdPosts.length){
+    box.innerHTML='<div class="empty">まだ投稿がありません。<br>最初の一件をどうぞ。</div>';
+    return;
+  }
+  // 親は新しい順、返信は親の直下に古い順で並べる
+  const parents=bdPosts.filter(p=>!p.replyTo).slice().reverse();
+  const repliesOf=id=>bdPosts.filter(p=>p.replyTo===id);
+  // 親が消された（通報で非表示など）返信は迷子になるため、末尾にまとめて出す
+  const known=new Set(bdPosts.map(p=>p.id));
+  const orphans=bdPosts.filter(p=>p.replyTo&&!known.has(p.replyTo));
+
+  let html="";
+  const card=(p,isReply)=>{
+    const tag=bdScreenName(p.screen);
+    return '<div class="bd-post'+(isReply?" reply":"")+'" data-id="'+esc(p.id)+'">'+
+      '<div class="bd-head"><span class="bd-name">'+esc(p.name||"名無し")+'</span>'+
+      '<span class="bd-when">'+bdWhen(p.ts)+'</span>'+
+      (tag?'<span class="bd-tag">'+esc(tag)+'</span>':'')+'</div>'+
+      '<div class="bd-body">'+esc(p.body)+'</div>'+
+      '<div class="bd-acts">'+
+        '<button data-reply="'+esc(p.id)+'">返信する</button>'+
+        '<button data-report="'+esc(p.id)+'">通報</button>'+
+      '</div></div>';
+  };
+  parents.forEach(p=>{
+    html+=card(p,false);
+    repliesOf(p.id).forEach(r=>{html+=card(r,true);});
+  });
+  orphans.forEach(o=>{html+=card(o,false);});
+  box.innerHTML=html;
+
+  box.querySelectorAll("[data-reply]").forEach(b=>b.onclick=()=>bdStartReply(b.dataset.reply));
+  box.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>bdReport(b.dataset.report,b));
+}
+
+function bdStartReply(id){
+  const p=bdPosts.find(x=>x.id===id);
+  if(!p)return;
+  bdReplyTo=id;
+  $("#bdReplyTo").textContent="↩ "+(p.name||"名無し")+"さんへの返信";
+  $("#bdReplying").className="bd-replying on";
+  $("#bdBody").focus();
+  $("#bdReplying").scrollIntoView({block:"center",behavior:"smooth"});
+}
+function bdCancelReply(){
+  bdReplyTo="";
+  $("#bdReplying").className="bd-replying";
+}
+
+async function bdSend(){
+  if(bdBusy)return;
+  const body=$("#bdBody").value.trim();
+  const name=$("#bdName").value.trim();
+  if(!body){bdSay("本文を入力してください。","ng");return;}
+  if(body.length>BOARD.maxBody){bdSay("本文は"+BOARD.maxBody+"文字までです。","ng");return;}
+  if(!BOARD.url){bdSay("掲示板の接続先が未設定です。","ng");return;}
+
+  bdBusy=true;
+  const btn=$("#bdSend");
+  const label=btn.textContent;
+  btn.textContent="送信中…";btn.disabled=true;
+  try{
+    const r=await fetch(BOARD.url,{
+      method:"POST",
+      // プリフライトを起こさないため text/plain のまま送る
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({
+        action:"post", body:body, name:name,
+        screen:bdReplyTo?"":curScreenBefore||"general",
+        replyTo:bdReplyTo, client:bdClientId()
+      })
+    });
+    const j=await r.json();
+    if(!j.ok){bdSay(j.error||"送信できませんでした。","ng");return;}
+    $("#bdBody").value="";bdCount();bdCancelReply();
+    if(j.status==="pending"){
+      bdSay("送信しました。内容を確認してから表示されます（URLを含む投稿は自動で保留になります）。","ok");
+    }else{
+      bdSay("送信しました。ありがとうございます。","ok");
+    }
+    await bdLoad(true);
+  }catch(e){
+    bdSay("送信できませんでした。通信環境を確認してもう一度お試しください。","ng");
+  }finally{
+    bdBusy=false;btn.textContent=label;btn.disabled=false;
+  }
+}
+
+async function bdReport(id,btn){
+  if(!BOARD.url)return;
+  if(!window.confirm("この投稿を通報しますか？\n複数の通報が集まると自動で非表示になります。"))return;
+  try{
+    const r=await fetch(BOARD.url,{
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"report",id:id})
+    });
+    const j=await r.json();
+    if(!j.ok){bdSay(j.error||"通報できませんでした。","ng");return;}
+    btn.textContent="通報しました";btn.classList.add("done");btn.disabled=true;
+    if(j.hidden)await bdLoad(true);
+  }catch(e){
+    bdSay("通報できませんでした。","ng");
+  }
+}
+
+function bdCount(){
+  const n=$("#bdBody").value.length;
+  const el=$("#bdCount");
+  el.textContent=n+" / "+BOARD.maxBody;
+  el.className="bd-count"+(n>BOARD.maxBody?" over":"");
+}
+
+function initBoard(){
+  $("#bdBody").addEventListener("input",bdCount);
+  $("#bdSend").onclick=bdSend;
+  $("#bdReload").onclick=()=>bdLoad(true);
+  $("#bdReplyCancel").onclick=bdCancelReply;
+  bdCount();
+}
+
 /* ---- Googleアドセンス（アドセンス版のみ） ---- */
 function initAdsense(){
   if(!ADSENSE.enabled)return;
@@ -4633,6 +4906,7 @@ tcSyncAccelInputs();buildTactUI();calcTact();
 $("#wtSearch").value="";
 buildWeightUI();calcWeight();
 renderRef();
+initBoard();
 initDiaToggles();
 // 起動直後の初期描画で履歴が積まれないよう、保留中の1件だけ捨てる
 clearTimeout(histTimer);histPending=null;
