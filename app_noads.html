@@ -10,7 +10,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Mech Gauge — はめあい・ねじ・三角関数 現場ツール</title>
+<title>Mecha Gauge — はめあい・ねじ・三角関数 現場ツール</title>
 <style>
 :root{
   --bg:#0E1116; --panel:#161C24; --panel2:#1C232D; --line:#28313D;
@@ -362,7 +362,7 @@ body.adsense-on #adInline{display:block;}
 
 <!-- ============ オープニング広告 ============ -->
 <div id="splash" class="hidden">
-  <div class="app-mark">Mech <span>Gauge</span></div>
+  <div class="app-mark">Mecha <span>Gauge</span></div>
   <a class="ad-card" id="splashAd" target="_blank" rel="noopener"></a>
   <div class="splash-foot">
     <span class="ad-label">広告</span>
@@ -373,7 +373,7 @@ body.adsense-on #adInline{display:block;}
 <header>
   <button class="hbtn" id="btnMenu" aria-label="機能メニュー">☰</button>
   <div class="ttl">
-    <h1>Mech Gauge</h1>
+    <h1>Mecha Gauge</h1>
     <span class="sub" id="hdSub">はめあい公差</span>
   </div>
   <button class="hbtn" id="btnRef" aria-label="早見表・履歴">📖</button>
@@ -1492,9 +1492,9 @@ function notesFromDOM(...sels){
 function copyScreenResult(screen,btn){
   const L=LAST[screen];if(!L){return;}
   const bar="-".repeat(28);
-  let text="【Mech Gauge】"+L.title+"\n"+bar+"\n"+L.lines.join("\n")+"\n";
+  let text="【Mecha Gauge】"+L.title+"\n"+bar+"\n"+L.lines.join("\n")+"\n";
   if(L.notes&&L.notes.length)text+=bar+"\n【注意】\n"+L.notes.map(n=>"・"+n).join("\n")+"\n";
-  text+=bar+"\n※ Mech Gaugeアプリの計算結果（参考値）。JIS規格・材料力学の一次情報に基づき、この計算が正しいかファクトチェックしてください。";
+  text+=bar+"\n※ Mecha Gaugeアプリの計算結果（参考値）。JIS規格・材料力学の一次情報に基づき、この計算が正しいかファクトチェックしてください。";
   copyText(text,btn);
 }
 /* =========================================================
@@ -1549,7 +1549,7 @@ function saveScreenImage(screen,btn){
   let y=M;
   x.fillStyle="#0B72B5";x.fillRect(M,y,W-M*2,8);y+=52;
   x.fillStyle="#111820";x.font="bold 58px sans-serif";x.textBaseline="alphabetic";
-  x.fillText("Mech Gauge",M,y);
+  x.fillText("Mecha Gauge",M,y);
   x.fillStyle="#55636F";x.font="30px sans-serif";
   x.fillText(new Date().toLocaleString("ja-JP"),W-M-x.measureText(new Date().toLocaleString("ja-JP")).width,y);
   y+=64;
@@ -1596,7 +1596,7 @@ function saveScreenImage(screen,btn){
     x.strokeStyle="#B9C4CF";x.lineWidth=2;
     x.beginPath();x.moveTo(M,fy-46);x.lineTo(W-M,fy-46);x.stroke();
     x.fillStyle="#55636F";x.font="24px sans-serif";
-    wrapText(x,"※ 参考値です。実設計は規格原典で検証し、有資格者の確認を受けてください。 / Mech Gauge",M,fy-8,W-M*2,30);
+    wrapText(x,"※ 参考値です。実設計は規格原典で検証し、有資格者の確認を受けてください。 / Mecha Gauge",M,fy-8,W-M*2,30);
   };
   const finish=()=>{footer();downloadCanvas(cv,screen,btn);};
   if(!diagrams.length){finish();return;}
@@ -1637,7 +1637,7 @@ function wrapText(ctx,text,X,Y,maxW,lh){
   ctx.fillText(line,X,yy);
 }
 function downloadCanvas(cv,screen,btn){
-  const name="MechGauge_"+screen+"_"+new Date().toISOString().slice(0,19).replace(/[:T-]/g,"")+".png";
+  const name="MechaGauge_"+screen+"_"+new Date().toISOString().slice(0,19).replace(/[:T-]/g,"")+".png";
   cv.toBlob(b=>{
     if(!b)return;
     const url=URL.createObjectURL(b);
