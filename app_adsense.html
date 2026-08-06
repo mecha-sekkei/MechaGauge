@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<!-- ★ このファイルが開発の正本です（広告なし版）。
-     バグ修正・機能追加はすべてこのファイルに入れます。
-     公開用の広告あり版 docs/app.html は凍結中で、
-     「ドキュメントをすべて更新して」の指示が出たときに
-     ./build_variants.sh --release で作り直します。 -->
+<!-- ★ このファイルは build_variants.sh が docs/app_noads.html から生成しています。
+     直接編集しないでください。修正は正本 docs/app_noads.html に入れ、
+     生成し直してください。
+     Googleアドセンス版。協賛3社の広告は載せない。 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -1247,7 +1246,7 @@ const AD_CONFIG = {
    IDが未設定のあいだは何も読み込みません（審査前に空枠が出ないように）。
    ========================================================= */
 const ADSENSE = {
-  enabled: false,                      // ← --adsense で true になる。手で変えない
+  enabled: true,                       // ← --adsense で true になる。手で変えない
   client: "ca-pub-0000000000000000",   // ← ここにパブリッシャーIDを入れる
   autoAds: true,                       // 自動広告（アンカー・全画面）をGoogleに任せる
   inlineSlot: ""                       // 本文下に置く手動枠のスロットID（空なら置かない）
