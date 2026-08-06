@@ -263,6 +263,9 @@ svg text{font-family:ui-monospace,"SF Mono",Menlo,monospace;}
   background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:6px 6px 6px 12px;font-size:.85rem;}
 .hint-row b{color:var(--cut);font-size:1rem;}
 .hint-row .chip{min-height:40px;flex:0 0 auto;}
+/* 目安レンジから下限・中央・上限を選ぶ */
+.hint-row .picks{display:flex;gap:5px;flex:0 0 auto;}
+.hint-row .picks .chip{min-height:40px;padding:0 10px;font-size:.78rem;}
 select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid var(--line);
   border-radius:12px;color:var(--ink);font:inherit;font-weight:700;padding:0 10px;-webkit-appearance:none;}
 
@@ -525,6 +528,12 @@ body.adsense-on #adInline{display:block;}
     <p class="note" id="screwNote"></p>
   </div>
 
+  <div class="card" id="screwStrCard">
+    <h2>この呼びの目安強度（SS400相当）</h2>
+    <div class="spec-list" id="screwStr"></div>
+    <p class="note" id="screwStrNote"></p>
+  </div>
+
   <div class="card" id="screwTapCard">
     <h2>タップ下穴（ひっかかり率で調整）</h2>
     <div class="seg" id="screwEngage">
@@ -666,13 +675,14 @@ body.adsense-on #adInline{display:block;}
     <div class="card">
       <h2>締付条件</h2>
       <div class="seg sm" id="boltK">
-        <button data-k="0.13">モリブデン<br>K=0.13</button>
-        <button data-k="0.15">油潤滑<br>K=0.15</button>
-        <button data-k="0.17" class="on">軽潤滑<br>K=0.17</button>
-        <button data-k="0.18">一般・めっき<br>K=0.18</button>
-        <button data-k="0.2">乾式<br>K=0.20</button>
-        <button data-k="0.25">亜鉛めっき<br>K=0.25</button>
+        <button data-k="0.2">乾式・無処理<br>K=0.20</button>
+        <button data-k="0.17" class="on">軽潤滑・めっき<br>K=0.17</button>
+        <button data-k="0.13">焼付き防止剤<br>K=0.13</button>
+        <button data-k="0.18">ねじロック剤<br>K=0.18</button>
       </div>
+      <p class="note" style="margin-top:6px"><b>焼付き防止剤</b>＝メダリオン等のアンチシーズ。ステンレス同士のかじり（焼き付き）防止に使い、<b>摩擦が下がるので同じトルクでも軸力が上がります</b>。締めすぎに注意してください。<br>
+      <b>ねじロック剤</b>＝ロックタイト243等の中強度。硬化前は液体で潤滑側に働きます。<b>実際の締付トルクにはプリベリングトルクが上乗せ</b>されるため、メーカーのトルク表がある場合はそちらを優先してください。<br>
+      K値は文献レベルの<b>目安</b>です。ばらつきが大きい係数なので、重要部位は実測（軸力計・トルク法の検証）で確かめてください。</p>
       <div class="f-grid" style="margin-top:8px">
         <div class="f-row"><span class="lab">K値を直接入力</span>
           <div class="ipt"><input id="boltKin" class="num" type="text" inputmode="decimal" value="0.17"><span class="u">—</span></div></div>
@@ -790,9 +800,22 @@ body.adsense-on #adInline{display:block;}
       <button data-t="ca">超硬</button>
       <button data-t="co" class="on">コーティング<br>超硬</button>
     </div>
-    <div class="hint-row"><span>目安 Vc: <b id="sugVcT" class="num">—</b></span><button class="chip" id="sugVcBtn">セット</button></div>
-    <div class="hint-row"><span id="sugFzL">目安 fz: <b id="sugFzT" class="num">—</b></span><button class="chip" id="sugFzBtn">セット</button></div>
-    <p class="note"><b>Vc（切削速度）</b>は刃先が材料の表面をこすっていく速さ、<b>fz（1刃送り）</b>は刃1枚が1回転で削り取る厚みです。この2つが決まれば、回転数と送り速度は自動で出ます。まず「セット」で目安を入れ、そこから調整してください。<br>
+    <div class="hint-row"><span>目安 Vc: <b id="sugVcT" class="num">—</b></span>
+      <span class="picks" id="sugVcPick">
+        <button class="chip" data-p="lo">下限</button>
+        <button class="chip" data-p="mid">中央</button>
+        <button class="chip" data-p="hi">上限</button>
+      </span></div>
+    <div class="hint-row"><span id="sugFzL">目安 fz: <b id="sugFzT" class="num">—</b></span>
+      <span class="picks" id="sugFzPick">
+        <button class="chip" data-p="lo">下限</button>
+        <button class="chip" data-p="mid">中央</button>
+        <button class="chip" data-p="hi">上限</button>
+      </span></div>
+    <p class="note" style="margin:6px 0 0"><b>下限</b>＝工具寿命を優先。機械の剛性が低い・突き出しが長い・仕上げのとき。<br>
+    <b>上限</b>＝能率を優先。剛性が高く、クーラントが効いていて、荒取りのとき。<br>
+    迷ったら<b>中央</b>から始めて、音・切りくず・面を見ながら振ってください。</p>
+    <p class="note"><b>Vc（切削速度）</b>は刃先が材料の表面をこすっていく速さ、<b>fz（1刃送り）</b>は刃1枚が1回転で削り取る厚みです。この2つが決まれば、回転数と送り速度は自動で出ます。上の<b>下限・中央・上限</b>から入れて、そこから調整してください。<br>
     目安は公開文献・教科書レベルの幅の広いレンジです。<b>実際の加工は必ず工具メーカーのカタログ推奨値を優先</b>し、機械剛性・突き出し・クーラントに応じて調整してください。</p>
   </div>
 
@@ -959,6 +982,13 @@ body.adsense-on #adInline{display:block;}
       <div class="f-row" id="bmARow" style="display:none"><span class="lab">荷重位置 a（左端から）</span>
         <div class="ipt"><input id="bmA" class="num" type="text" inputmode="decimal" value="300"><span class="u">mm</span></div></div>
     </div>
+    <h2 style="margin-top:12px">梁そのものの重さ</h2>
+    <div class="seg sm" id="beamSelf">
+      <button data-s="1" class="on">自重を含める</button>
+      <button data-s="0">自重を無視</button>
+    </div>
+    <p class="note" style="margin-top:6px">梁は自分の重さでもたわみます。<b>実務では含めて設計するのが普通</b>なので既定でオンにしています。長スパン・重い型鋼ほど効きます。</p>
+
     <h2 style="margin-top:12px">たわみの許容基準</h2>
     <div class="seg sm" id="beamDefl">
       <button data-d="300" class="on">L/300<br>一般</button>
@@ -1625,19 +1655,40 @@ function svgForPrint(svg){
   xml=xml.replace(/(<svg[^>]*>)/,'$1'+style);
   return {xml,w:vb[2],h:vb[3]};
 }
+/* 図を集める範囲。
+   1つの画面に複数のパネルが同居している場合は、画面IDでまとめて拾ってはいけない。
+   ・三角関数の画面には テーパ の図も入っている
+   ・ボルト・軸の画面には 両方の図が入っている
+   画面IDで拾うと「直角三角形で保存したのにテーパの図が出る」「テーパで保存すると
+   図が出ない（screen-taper という画面は存在しない）」という不具合になる。実際に起きた。 */
+function diaScope(screen){
+  if(screen==="trig")    return $("#triPanel");
+  if(screen==="taper")   return $("#taperPanel");
+  if(screen==="strength")return $(stState.mode==="bolt"?"#boltPanel":"#shaftPanel");
+  return document.getElementById("screen-"+screen);
+}
 function screenDiagrams(screen){
-  const el=document.getElementById("screen-"+screen);
+  const el=diaScope(screen);
   if(!el)return [];
   // 折りたたまれていても取得できるよう、表示状態に関係なくSVGを集める
   return [...el.querySelectorAll("svg.dia-svg")].filter(s=>s.innerHTML.trim().length>40);
 }
 function saveScreenImage(screen,btn){
   const L=LAST[screen];if(!L)return;
-  const W=1654,H=2339;                       // A4縦 210:297（200dpi相当）
+  const W=1654,PAGE=2339;                    // A4縦 210:297（200dpi相当）
+  const M=110;                                // 余白
+  const diagrams=screenDiagrams(screen).map(svgForPrint).filter(Boolean);
+  /* ★ 1枚に押し込まない。
+     以前は A4 1枚に収まらない分を黙って捨てていたため、結果行が多い画面
+     （タクトタイムは30行ある）で速度線図が出力されない不具合が起きていた。
+     必要な分だけ縦に伸ばし、最後にA4の整数倍へ切り詰める。
+     複数ファイルに分けないのは、スマホだと2枚目のダウンロードが
+     ブロックされることがあるため。 */
+  const est=560+(L.lines.length+(L.notes?L.notes.length:0))*58+diagrams.length*620;
+  const H=Math.min(PAGE*4,Math.max(PAGE,Math.ceil(est/PAGE)*PAGE));
   const cv=document.createElement("canvas");cv.width=W;cv.height=H;
   const x=cv.getContext("2d");
   x.fillStyle="#FFFFFF";x.fillRect(0,0,W,H);
-  const M=110;                                // 余白
   let y=M;
   x.fillStyle="#0B72B5";x.fillRect(M,y,W-M*2,8);y+=52;
   x.fillStyle="#111820";x.font="bold 58px sans-serif";x.textBaseline="alphabetic";
@@ -1682,24 +1733,35 @@ function saveScreenImage(screen,btn){
     y+=8;
   }
   y+=20;
-  const diagrams=screenDiagrams(screen).map(svgForPrint).filter(Boolean);
-  const footer=()=>{
-    const fy=H-M+10;
+  /* 描き終えた高さに合わせてA4の整数倍へ切り詰めてから書き出す。
+     余白が空いたまま縦長になるのを防ぐため。 */
+  const finish=()=>{
+    const fy=Math.min(H,Math.ceil((y+120)/PAGE)*PAGE);
     x.strokeStyle="#B9C4CF";x.lineWidth=2;
-    x.beginPath();x.moveTo(M,fy-46);x.lineTo(W-M,fy-46);x.stroke();
+    x.beginPath();x.moveTo(M,fy-M-36);x.lineTo(W-M,fy-M-36);x.stroke();
     x.fillStyle="#55636F";x.font="24px sans-serif";
-    wrapText(x,"※ 参考値です。実設計は規格原典で検証し、有資格者の確認を受けてください。 / Mecha Gauge",M,fy-8,W-M*2,30);
+    wrapText(x,"※ 参考値です。実設計は規格原典で検証し、有資格者の確認を受けてください。 / Mecha Gauge",
+      M,fy-M+2,W-M*2,30);
+    let out=cv;
+    if(fy<H){
+      out=document.createElement("canvas");out.width=W;out.height=fy;
+      const o=out.getContext("2d");
+      o.fillStyle="#FFFFFF";o.fillRect(0,0,W,fy);
+      o.drawImage(cv,0,0,W,fy,0,0,W,fy);
+    }
+    downloadCanvas(out,screen,btn);
   };
-  const finish=()=>{footer();downloadCanvas(cv,screen,btn);};
   if(!diagrams.length){finish();return;}
-  // 図は下半分に収まる範囲で並べる
   let idx=0;
   const drawNext=()=>{
     if(idx>=diagrams.length){finish();return;}
     const d=diagrams[idx++];
-    const availH=H-M-60-y;
-    if(availH<160){finish();return;}
-    const maxW=W-M*2, scale=Math.min(maxW/d.w,Math.min(availH,520)/d.h);
+    const maxW=W-M*2;
+    // 高さは伸ばしてあるので「入らないから捨てる」は起こらない。
+    // それでも上限に当たったときだけ縮めて必ず載せる。
+    const availH=H-M-90-y;
+    let scale=Math.min(maxW/d.w,520/d.h);
+    if(d.h*scale>availH)scale=Math.min(maxW/d.w,Math.max(120,availH)/d.h);
     const dw=d.w*scale,dh=d.h*scale;
     const img=new Image();
     img.onload=()=>{
@@ -2039,6 +2101,37 @@ function buildScrewWheel(){
     v=>{screwState.name=v;renderScrew();});
   renderScrew();
 }
+/* ねじ画面に「そのサイズなら何kgくらい持つか」を出す。
+   材料は SS400 だけにする。一般的な鉄のボルト（強度区分4.6）が
+   降伏点240 MPa 級で SS400（245 MPa）とほぼ同じで、現場で一番使うため。
+   詳しい検討は「ボルト・軸の強度」画面に任せ、ここは桁を掴む用途に絞る。 */
+const SCREW_STR={Ry:245,S:3,label:"SS400（JIS G 3101）"};
+function renderScrewStrength(name,d,P,is60){
+  const el=$("#screwStr"),nt=$("#screwStrNote"),card=$("#screwStrCard");
+  // 60°ねじ（メートル・ユニファイ）以外は有効断面積の式が当てはまらないので出さない
+  if(!is60||!(d>0)||!(P>0)){card.style.display="none";return;}
+  card.style.display="";
+  const As=boltAs(d,P);                       // JIS B 1082
+  const siga=SCREW_STR.Ry/SCREW_STR.S;        // 許容引張応力
+  const taua=siga/Math.sqrt(3);               // ミーゼスの相当応力より τa=σa/√3
+  const Ft=siga*As, Fs=taua*As;
+  const kgf=n=>(n/9.80665);
+  const fmt=(n)=>n>=1000?(n/1000).toFixed(2)+" kN":Math.round(n)+" N";
+  const spec=(k,v,sub,hl)=>'<div class="spec'+(hl?" hl":"")+'"><span class="k">'+k+
+    '</span><span class="v num">'+v+(sub?'<span class="sub">'+sub+"</span>":"")+"</span></div>";
+  let h="";
+  h+=spec("有効断面積 As",As.toFixed(1)+" mm²","0.7854(d−0.9382P)²");
+  h+=spec("許容引張荷重",fmt(Ft),"≒ "+Math.round(kgf(Ft)).toLocaleString()+" kgf",true);
+  h+=spec("許容せん断荷重",fmt(Fs),"≒ "+Math.round(kgf(Fs)).toLocaleString()+" kgf（ねじ部）",true);
+  el.innerHTML=h;
+  nt.innerHTML="材料 <b>"+SCREW_STR.label+"</b>（降伏点 "+SCREW_STR.Ry+" MPa）を<b>安全率 "+SCREW_STR.S+
+    "（静荷重）</b>で見た目安です。許容引張 σa="+siga.toFixed(1)+" MPa、許容せん断 τa=σa/√3="+
+    taua.toFixed(1)+" MPa。<br>"+
+    "<b>市販の鉄ボルト（強度区分4.6）がほぼこの強さ</b>なので、桁の見当をつけるのに使えます。"+
+    "強度区分8.8などの高張力ボルト・繰返し荷重・締付軸力・ねじ込み長さまで見るときは"+
+    "<b>「ボルト・軸の強度」画面</b>を使ってください。";
+}
+
 function renderScrew(){
   const S=SCREW_DATA[screwState.series];
   const row=screwRow();
@@ -2066,6 +2159,7 @@ function renderScrew(){
   html+=spec("ねじ山角度",S.angle+"°");
   $("#screwName").textContent=name;
   $("#screwSpecs").innerHTML=html;
+  renderScrewStrength(name,d,P,is60);
 
   // 規格範囲外サイズの注記（メートル並目・細目のみ対象。選択度の意味が系列で異なるため分岐する）
   const warn=$("#screwWarn");
@@ -2111,8 +2205,11 @@ function renderScrew(){
       (fixedDrill==null?"ひっかかり率: "+screwState.engage+" %":null),
       "【計算結果】"].filter(Boolean)
       .concat(rowsFromDOM("#screwSpecs"))
+      .concat($("#screwStrCard").style.display==="none"?[]:
+        ["【目安強度（SS400相当・安全率3）】"].concat(rowsFromDOM("#screwStr")))
       .concat(fixedDrill==null||S.taper?["【タップ下穴】"].concat(rowsFromDOM("#screwDrill")):[])
-      .concat(["根拠: "+S.name+"。下穴径 = 呼び径 − 1.299 × ピッチ × (ひっかかり率/100)"]),
+      .concat(["根拠: "+S.name+"。下穴径 = 呼び径 − 1.299 × ピッチ × (ひっかかり率/100)",
+        "　　　有効断面積 As = 0.7854(d−0.9382P)²（JIS B 1082）、τa = σa/√3"]),
     notes:notesFromDOM("#screwWarn")};
   pushHistory({s:"screw",t:name,
     d:S.name+"　下穴 "+(fixedDrill!=null?drill.toFixed(1):nearestDrill(drill))+" mm"+
@@ -3068,28 +3165,66 @@ function calcCut(){
   }
   $("#cutOut").innerHTML=h;$("#cutWarn").innerHTML=w;
 }
+/* フライスの図は「上から見た図」と「横から見た図」を上下に分ける。
+   ae（径方向）と ap（軸方向）は向きが直交しているので、1枚に描くと
+   どちらも同じような矢印になって区別がつかない。実際に分からないと指摘された。 */
 function drawCutMill(c){
   const svg=$("#cutPicSvg");if(!svg)return;
-  const cx=118,cy=110,Rtool=Math.max(26,Math.min(66,c.D*3));
-  const stockX=cx+Rtool*0.55,stockW=190,stockH=Math.min(150,Rtool*2.4);
+  svg.setAttribute("viewBox","0 0 360 330");
+  const W=360, mgn=26;
   let g="";
-  g+=`<rect x="${stockX}" y="${cy-stockH/2}" width="${stockW}" height="${stockH}" fill="rgba(252,165,165,.08)" stroke="var(--cut)" stroke-width="2"/>`;
-  const aePx=Math.max(10,Math.min(stockH*0.7,(c.ae/(c.D/2))*Rtool));
-  g+=`<rect x="${stockX}" y="${cy-aePx/2}" width="${Math.min(46,stockW*0.3)}" height="${aePx}" fill="rgba(252,165,165,.3)"/>`;
-  g+=`<circle cx="${cx}" cy="${cy}" r="${Rtool}" fill="none" stroke="var(--ink-dim)" stroke-width="2"/>`;
+  const panel=(y,h,title)=>{
+    let s=`<rect x="8" y="${y}" width="${W-16}" height="${h}" rx="10" fill="none" stroke="var(--line)" stroke-width="1.5"/>`;
+    s+=`<text class="dia-lab" x="18" y="${y+18}" font-size="11.5" font-weight="700">${title}</text>`;
+    return s;
+  };
+
+  /* ---- 上：上から見た図（径方向＝ae と 工具径 D） ---- */
+  const ty=6, th=158, cy=ty+92;
+  g+=panel(ty,th,"① 上から見た図（真上から）");
+  const Rt=Math.max(24,Math.min(46,c.D*2.2));
+  const cx=104;
+  // ワーク（上から見ると帯に見える）
+  const wx=cx+Rt-4, wTop=cy-52, wBot=cy+52;
+  g+=`<rect x="${wx}" y="${wTop}" width="${W-wx-mgn}" height="${wBot-wTop}" fill="rgba(252,165,165,.08)" stroke="var(--cut)" stroke-width="2"/>`;
+  // 削り取る幅 ae（工具がワークへ食い込んでいる量）
+  const aePx=Math.max(6,Math.min(Rt*2,(c.ae/Math.max(c.D,0.1))*Rt*2));
+  g+=`<rect x="${wx}" y="${wTop}" width="${Math.min(52,W-wx-mgn)}" height="${aePx}" fill="rgba(252,165,165,.34)"/>`;
+  // 工具（円）と刃
+  g+=`<circle cx="${cx}" cy="${cy}" r="${Rt}" fill="rgba(255,255,255,.03)" stroke="var(--ink-dim)" stroke-width="2"/>`;
   const nz=Math.max(1,Math.min(8,Math.round(c.z)||1));
   for(let i=0;i<nz;i++){
     const a=i*2*Math.PI/nz;
-    g+=`<line x1="${cx}" y1="${cy}" x2="${(cx+Rtool*Math.cos(a)).toFixed(1)}" y2="${(cy+Rtool*Math.sin(a)).toFixed(1)}" stroke="var(--ink-dim)" stroke-width="1" opacity=".45"/>`;
+    g+=`<line x1="${cx}" y1="${cy}" x2="${(cx+Rt*Math.cos(a)).toFixed(1)}" y2="${(cy+Rt*Math.sin(a)).toFixed(1)}" stroke="var(--ink-dim)" stroke-width="1" opacity=".4"/>`;
   }
-  g+=dimH(cx-Rtool,cx+Rtool,cy+Rtool+22,"D="+c.D+" mm",{above:false});
-  g+=`<text class="dia-lab" x="${cx}" y="${cy-Rtool-10}" font-size="12" text-anchor="middle">z=${c.z} 枚刃</text>`;
-  g+=diaLeader(stockX+18,cy-aePx/2,stockX+70,cy-aePx/2-30,"径方向切込み ae="+c.ae+" mm");
-  g+=`<text class="dia-lab" x="${stockX+stockW-6}" y="${cy-stockH/2+16}" font-size="11" text-anchor="end">軸方向切込み ap=${c.ap} mm（奥行き）</text>`;
+  // z はワークの矩形と重なるので、寸法線の文言にまとめて逃がす
+  g+=dimH(cx-Rt,cx+Rt,cy+Rt+20,"工具径 D="+c.D+" mm・z="+c.z+"枚刃",{above:false});
+  // ae は縦向きの寸法線で示す（横向きの ap と混ざらないように）
+  g+=dimV(wx+Math.min(52,W-wx-mgn)+14,wTop,wTop+aePx,"ae="+c.ae+" mm",{right:true});
+  g+=`<text class="dia-lab" x="${W-mgn}" y="${wBot-8}" font-size="10.5" text-anchor="end">ae＝横に食い込ませる幅</text>`;
+
+  /* ---- 下：横から見た図（軸方向＝ap） ---- */
+  const sy=ty+th+8, sh=158, surf=sy+66;
+  g+=panel(sy,sh,"② 横から見た図（真横から）");
+  const sx=118, halfD=Math.max(14,Math.min(30,c.D*1.4));
+  // ワーク（横から見ると断面）
+  const wl=48, wr=W-mgn, wbot=surf+64;
+  g+=`<rect x="${wl}" y="${surf}" width="${wr-wl}" height="${wbot-surf}" fill="rgba(252,165,165,.08)" stroke="var(--cut)" stroke-width="2"/>`;
+  // 削り込む深さ ap
+  const apPx=Math.max(5,Math.min(58,(c.ap/Math.max(c.ap,c.D,1))*52));
+  g+=`<rect x="${sx-halfD}" y="${surf}" width="${wr-(sx-halfD)}" height="${apPx}" fill="rgba(252,165,165,.34)"/>`;
+  // 工具（横から見ると長方形）。切り込んだ分だけワークへ入り込む
+  g+=`<rect x="${sx-halfD}" y="${sy+22}" width="${halfD*2}" height="${surf+apPx-(sy+22)}" fill="rgba(255,255,255,.05)" stroke="var(--ink-dim)" stroke-width="2"/>`;
+  g+=`<line x1="${sx}" y1="${sy+16}" x2="${sx}" y2="${surf+apPx+6}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>`;
+  // ap は縦の寸法線。工具径が大きいと左へ寄って枠外へ出るので、位置を固定にする
+  g+=dimV(82,surf,surf+apPx,"ap="+c.ap+" mm",{right:false,ext1:wl,ext2:wl});
+  g+=`<line x1="${wl}" y1="${surf}" x2="${wr}" y2="${surf}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>`;
+  g+=`<text class="dia-lab" x="${W-mgn}" y="${wbot-8}" font-size="10.5" text-anchor="end">ap＝下へ突っ込む深さ</text>`;
   svg.innerHTML=g;
 }
 function drawCutDrill(c,tip){
   const svg=$("#cutPicSvg");if(!svg)return;
+  svg.setAttribute("viewBox","0 0 360 220");   // フライスが縦長にするので戻す
   const cx=150,Rtool=Math.max(18,Math.min(54,c.D*2.4));
   const topY=36,holeDepthPx=Math.min(110,c.dep*2.2),tipPx=Math.min(36,tip*2.2);
   const bottomY=topY+holeDepthPx;
@@ -3104,18 +3239,46 @@ function drawCutDrill(c,tip){
   g+=`<text class="dia-lab" x="${cx}" y="${bottomY+tipPx+18}" font-size="11.5" text-anchor="middle">先端角 ${c.angle}°（先端長 ${tip.toFixed(2)} mm）</text>`;
   svg.innerHTML=g;
 }
+/* 旋盤も ap（半径方向）と f（軸方向）が直交するので、図を2つに分ける。 */
 function drawCutTurn(c,Rz){
   const svg=$("#cutPicSvg");if(!svg)return;
-  const cx=160,cy=112,R=Math.max(30,Math.min(64,c.D*1.2));
+  svg.setAttribute("viewBox","0 0 360 362");
+  const W=360;
   let g="";
-  g+=`<rect x="${cx-92}" y="${cy-R}" width="92" height="${R*2}" fill="rgba(252,165,165,.06)" stroke="var(--cut)" stroke-width="2"/>`;
-  g+=`<ellipse cx="${cx}" cy="${cy}" rx="14" ry="${R}" fill="rgba(252,165,165,.1)" stroke="var(--cut)" stroke-width="2.5"/>`;
-  const apPx=Math.max(6,Math.min(R*0.7,(c.ap/(c.D/2))*R*3));
-  g+=`<rect x="${cx-92}" y="${cy-R-apPx}" width="92" height="${apPx}" fill="rgba(125,211,252,.15)" stroke="var(--strength)" stroke-width="2"/>`;
-  g+=dimV(cx+18,cy-R,cy+R,"D="+c.D+" mm",{right:true});
-  g+=diaLeader(cx-46,cy-R-apPx/2,cx-80,cy-R-apPx-24,"切込み ap="+c.ap+" mm");
-  g+=`<text class="dia-lab" x="${cx-46}" y="${cy+R+20}" font-size="11.5" text-anchor="middle">送り f=${c.f} mm/rev</text>`;
-  g+=`<text class="dia-lab" x="${cx-46}" y="${cy+R+36}" font-size="11.5" text-anchor="middle">ノーズR ${c.R} → Rz≈${Rz.toFixed(1)}μm</text>`;
+  const panel=(y,h,title)=>
+    `<rect x="8" y="${y}" width="${W-16}" height="${h}" rx="10" fill="none" stroke="var(--line)" stroke-width="1.5"/>`+
+    `<text class="dia-lab" x="18" y="${y+18}" font-size="11.5" font-weight="700">${title}</text>`;
+
+  /* ---- 上：横から見た図。f は横矢印、ap は縦寸法。向きで区別できるようにする ---- */
+  // 高さは刃物の三角形と下の注記が重ならない分を確保している
+  const ty=6,th=212, ay=ty+108;
+  g+=panel(ty,th,"① 横から見た図（主軸は左）");
+  const R=Math.max(20,Math.min(38,c.D*0.75));
+  const wl=44,wr=W-30;
+  g+=`<rect x="${wl}" y="${ay-R}" width="${wr-wl}" height="${R*2}" fill="rgba(252,165,165,.08)" stroke="var(--cut)" stroke-width="2"/>`;
+  g+=`<line x1="${wl-14}" y1="${ay}" x2="${wr+8}" y2="${ay}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="8 3 2 3" opacity=".8"/>`;
+  // 刃物は下から当てる。上を空けて送り矢印と重ならないようにする
+  const apPx=Math.max(6,Math.min(R*0.8,(c.ap/Math.max(c.D/2,0.1))*R));
+  const tx=wl+96;
+  g+=`<rect x="${tx}" y="${ay+R-apPx}" width="${wr-tx}" height="${apPx}" fill="rgba(252,165,165,.36)"/>`;
+  g+=`<path d="M ${tx} ${ay+R-apPx} L ${tx-18} ${ay+R-apPx+32} L ${tx+20} ${ay+R-apPx+32} Z" fill="rgba(125,211,252,.18)" stroke="var(--strength)" stroke-width="2"/>`;
+  g+=dimV(tx-34,ay+R-apPx,ay+R,"ap="+c.ap+" mm",{right:false});
+  // 送りは軸方向。矢印はワークの上側に置く
+  const fy=ay-R-20;
+  g+=`<line x1="${tx+40}" y1="${fy}" x2="${tx-16}" y2="${fy}" stroke="var(--strength)" stroke-width="2.5"/>`;
+  g+=`<path d="M ${tx-16} ${fy} l 11 -5.5 v 11 z" fill="var(--strength)"/>`;
+  g+=`<text class="dia-val" x="${tx+48}" y="${fy+4}" font-size="11">送り f=${c.f} mm/rev</text>`;
+  g+=`<text class="dia-lab" x="${W-20}" y="${ty+th-10}" font-size="10.5" text-anchor="end">ap＝半径方向の厚み ／ f＝軸方向に進む量</text>`;
+
+  /* ---- 下：端面から見た図。D は縦寸法にして下端で切れないようにする ---- */
+  const sy=ty+th+8, sh=130, ccy=sy+70, ccx=96;
+  g+=panel(sy,sh,"② 端面から見た図（軸の正面）");
+  const R2=Math.max(18,Math.min(34,c.D*0.6));
+  g+=`<circle cx="${ccx}" cy="${ccy}" r="${R2}" fill="rgba(252,165,165,.1)" stroke="var(--cut)" stroke-width="2.5"/>`;
+  g+=`<circle cx="${ccx}" cy="${ccy}" r="2.5" fill="var(--ink-dim)"/>`;
+  g+=dimV(ccx+R2+16,ccy-R2,ccy+R2,"D="+c.D+" mm",{right:true});
+  g+=`<text class="dia-lab" x="${ccx+R2+92}" y="${ccy-4}" font-size="10.5">この径で回転数が決まる</text>`;
+  g+=`<text class="dia-lab" x="${ccx+R2+92}" y="${ccy+14}" font-size="10.5">ノーズR ${c.R} → Rz≈${Rz.toFixed(1)} μm</text>`;
   svg.innerHTML=g;
 }
 function cutShowPanels(){
@@ -3147,21 +3310,29 @@ $("#ctR").querySelectorAll("button").forEach(b=>{
     cutState.turn.R=+b.dataset.r;calcCut();
   };
 });
-$("#sugVcBtn").onclick=()=>{
-  const vc=cutSugVc();if(!vc)return;
-  const mid=Math.round((vc[0]+vc[1])/2);
-  const o=cutState[cutState.mode];o.Vc=mid;
-  $({mill:"#cmVc",drill:"#cdVc",turn:"#ctVc"}[cutState.mode]).value=mid;
-  calcCut();
-};
-$("#sugFzBtn").onclick=()=>{
-  const fd=cutSugFeed();
-  const mid=Math.round((fd[0]+fd[1])/2/0.005)*0.005;
-  const o=cutState[cutState.mode];
-  if(cutState.mode==="mill"){o.fz=mid;$("#cmFz").value=mid;}
-  else{o.f=mid;$({drill:"#cdF",turn:"#ctF"}[cutState.mode]).value=mid;}
-  calcCut();
-};
+// レンジのどこを採るか。下限＝工具寿命優先、上限＝能率優先
+const pickIn=(r,p)=>p==="lo"?r[0]:p==="hi"?r[1]:(r[0]+r[1])/2;
+$("#sugVcPick").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    const vc=cutSugVc();if(!vc)return;
+    const v=Math.round(pickIn(vc,b.dataset.p));
+    cutState[cutState.mode].Vc=v;
+    $({mill:"#cmVc",drill:"#cdVc",turn:"#ctVc"}[cutState.mode]).value=v;
+    calcCut();
+  };
+});
+$("#sugFzPick").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    const fd=cutSugFeed();
+    // 現場で刻める値に丸める（0.005刻み）。下限は丸めで0にならないよう下限を持たせる
+    const v=Math.max(0.005,Math.round(pickIn(fd,b.dataset.p)/0.005)*0.005);
+    const o=cutState[cutState.mode];
+    const val=+v.toFixed(3);
+    if(cutState.mode==="mill"){o.fz=val;$("#cmFz").value=val;}
+    else{o.f=val;$({drill:"#cdF",turn:"#ctF"}[cutState.mode]).value=val;}
+    calcCut();
+  };
+});
 [["#cmD","mill","D",1],["#cmZ","mill","z",0],["#cmVc","mill","Vc",0],["#cmFz","mill","fz",0],
  ["#cmAp","mill","ap",0],["#cmAe","mill","ae",0],["#cmL","mill","L",0],
  ["#cdD","drill","D",1],["#cdVc","drill","Vc",0],["#cdF","drill","f",0],["#cdDep","drill","dep",0],
@@ -3309,27 +3480,36 @@ function propsSqPipe2(B,H,t){
   return {A,I,Z:2*I/H};
 }
 /* 支持条件×荷重の8ケース。v は P[N]／w[N/mm]／M0[N·mm] */
+/* self: 自重（＝全長にかかる等分布荷重）を足すときに使う、同じ支持条件の等分布ケースのid。
+   自重は必ず等分布なので、支持条件だけが同じケースの式を借りて重ね合わせる。 */
 const BEAM_CASES=[
- {id:"c1",n:"片持ち・先端集中",load:"P",
+ {id:"c1",n:"片持ち・先端集中",load:"P",self:"c2",
   d:(v,L,EI)=>v*Math.pow(L,3)/(3*EI), m:(v,L)=>v*L, mAt:"固定端"},
- {id:"c2",n:"片持ち・等分布",load:"w",
+ {id:"c2",n:"片持ち・等分布",load:"w",self:"c2",
   d:(v,L,EI)=>v*Math.pow(L,4)/(8*EI), m:(v,L)=>v*L*L/2, mAt:"固定端"},
- {id:"c3",n:"両端支持・中央集中",load:"P",
+ {id:"c3",n:"両端支持・中央集中",load:"P",self:"c4",
   d:(v,L,EI)=>v*Math.pow(L,3)/(48*EI), m:(v,L)=>v*L/4, mAt:"中央"},
- {id:"c4",n:"両端支持・等分布",load:"w",
+ {id:"c4",n:"両端支持・等分布",load:"w",self:"c4",
   d:(v,L,EI)=>5*v*Math.pow(L,4)/(384*EI), m:(v,L)=>v*L*L/8, mAt:"中央"},
- {id:"c5",n:"両端支持・任意位置集中",load:"P",pos:true,
+ {id:"c5",n:"両端支持・任意位置集中",load:"P",pos:true,self:"c4",
   d:(v,L,EI,a)=>{const b=Math.min(a,L-a);return v*b*Math.pow(L*L-b*b,1.5)/(9*Math.sqrt(3)*L*EI);},
   m:(v,L,a)=>v*a*(L-a)/L, mAt:"荷重点"},
- {id:"c6",n:"両端固定・中央集中",load:"P",
+ {id:"c6",n:"両端固定・中央集中",load:"P",self:"c7",
   d:(v,L,EI)=>v*Math.pow(L,3)/(192*EI), m:(v,L)=>v*L/8, mAt:"固定端・中央"},
- {id:"c7",n:"両端固定・等分布",load:"w",
+ {id:"c7",n:"両端固定・等分布",load:"w",self:"c7",
   d:(v,L,EI)=>v*Math.pow(L,4)/(384*EI), m:(v,L)=>v*L*L/12, mAt:"固定端"},
- {id:"c8",n:"片持ち・先端モーメント",load:"M",
+ {id:"c8",n:"片持ち・先端モーメント",load:"M",self:"c2",
   d:(v,L,EI)=>v*L*L/(2*EI), m:(v)=>v, mAt:"全長一様"}];
 
+/* 断面積[mm²]と密度[g/cm³]から自重の等分布荷重を出す。
+   ρ[g/cm³] = 1e-6 kg/mm³ なので w[N/mm] = A × ρ × 9.80665e-6。
+   検算: 角パイプ50×50×t3.2（A=599mm²・SS400）→ 0.0461 N/mm = 46.1 N/m ≒ 4.7 kg/m
+   （JISのSTKR 50×50×3.2 は 4.50 kg/m。隅Rを無視しているぶん数%大きい） */
+function beamSelfW(A,rho){return A*rho*9.80665e-6;}   // N/mm
+
 let beamState={src:"dims",shape:"box",d:{rd:30,pd:48.6,pt:2.8,rb:30,rh:40,bb:50,bh:50,bt:3.2},
- fam:"h",size:10,axis:"x",mat:"SS400",sf:3,c:"c3",L:1000,P:1000,w:500,M0:100,a:300,defl:300};
+ fam:"h",size:10,axis:"x",mat:"SS400",sf:3,c:"c3",L:1000,P:1000,w:500,M0:100,a:300,defl:300,
+ self:1};   // 自重を含めるか。実務では含めるのが普通なので既定でオン
 
 function buildBeamChips(){
   const fm=$("#beamFam");fm.innerHTML="";
@@ -3374,8 +3554,11 @@ function calcBeam(){
   // 型鋼選択時のサマリ
   if(b.src==="steel"){
     const fv=v=>v>=1000?Math.round(v).toLocaleString():v>=100?v.toFixed(0):v.toFixed(1);
+    // 密度は選んだ材料のものを使う。鋼で固定していると、アルミを選んだときに
+    // 下の「梁の自重」と3倍近く食い違う表示になる（実際にそうなっていた）
     $("#beamSecInfo").innerHTML=
-      resRow("断面積 A",(sec.A/100).toFixed(2)+" cm²","単位質量 ≈ "+(sec.A*0.00785).toFixed(1)+" kg/m")+
+      resRow("断面積 A",(sec.A/100).toFixed(2)+" cm²",
+        "単位質量 ≈ "+(sec.A*(m.rho||7.85)/1000).toFixed(1)+" kg/m（"+m.n+"）")+
       resRow("断面二次モーメント I",fv(sec.I/1e4)+" cm⁴","")+
       resRow("断面係数 Z",fv(sec.Z/1e3)+" cm³","");
   }
@@ -3386,8 +3569,20 @@ function calcBeam(){
   else if(bc.load==="w")v=b.w/1000; // N/m → N/mm
   else v=b.M0*1000; // N·m → N·mm
   const a=bc.pos?Math.min(Math.max(b.a,1),b.L-1):0;
-  const delta=bc.d(v,b.L,EI,a);
-  const Mmax=bc.pos?bc.m(v,b.L,a):bc.m(v,b.L);
+  const dLoad=bc.d(v,b.L,EI,a);
+  const mLoad=bc.pos?bc.m(v,b.L,a):bc.m(v,b.L);
+
+  /* 自重は全長にかかる等分布荷重として、同じ支持条件の式で足し合わせる。
+     線形弾性なので重ね合わせが使える。
+     ただし最大値の位置は必ずしも一致しない（任意位置集中だけは荷重点と中央でずれる）。
+     その場合は単純に足すと少し大きめ＝安全側に出る。注記で断っている。 */
+  const wSelf=b.self?beamSelfW(sec.A,m.rho||7.85):0;
+  const sc=BEAM_CASES.find(x=>x.id===bc.self);
+  const dSelf=wSelf?sc.d(wSelf,b.L,EI,b.L/2):0;
+  const mSelf=wSelf?sc.m(wSelf,b.L,b.L/2):0;
+
+  const delta=dLoad+dSelf;
+  const Mmax=mLoad+mSelf;
   const sig=Mmax/sec.Z;
   const base=m.brittle?m.Rm:m.Ry, Sef=m.brittle?b.sf+1:b.sf;
   const siga=base/Sef;
@@ -3396,9 +3591,16 @@ function calcBeam(){
 
   let h="";
   h+=resRow("断面",sec.name,"I="+(sec.I/1e4).toFixed(1)+" cm⁴ ／ Z="+(sec.Z/1e3).toFixed(1)+" cm³");
+  if(b.self){
+    h+=resRow("梁の自重",(wSelf*1000).toFixed(1)+" N/m",
+      (wSelf*1000/9.80665).toFixed(2)+" kg/m ／ 全長 "+(wSelf*b.L).toFixed(0)+" N（"+
+      (wSelf*b.L/9.80665).toFixed(2)+" kg）");
+  }
   h+=resRow("最大たわみ δ",delta<0.001?delta.toExponential(2)+" mm":delta.toFixed(3)+" mm",
-    dLim!=null?"許容 "+dLim.toFixed(2)+" mm（L/"+b.defl+"）":"基準指定なし",true);
-  h+=resRow("最大曲げモーメント",(Mmax/1000).toFixed(1)+" N·m","位置: "+bc.mAt);
+    (b.self?"荷重 "+dLoad.toFixed(3)+" ＋ 自重 "+dSelf.toFixed(3)+" mm ／ ":"")+
+    (dLim!=null?"許容 "+dLim.toFixed(2)+" mm（L/"+b.defl+"）":"基準指定なし"),true);
+  h+=resRow("最大曲げモーメント",(Mmax/1000).toFixed(1)+" N·m",
+    (b.self?"荷重 "+(mLoad/1000).toFixed(1)+" ＋ 自重 "+(mSelf/1000).toFixed(1)+" N·m ／ ":"")+"位置: "+bc.mAt);
   h+=resRow("曲げ応力 σ",sig.toFixed(1)+" MPa","許容 "+siga.toFixed(1)+" MPa（"+m.n+"÷"+Sef+"）",true);
   const ok=okD&&okS;
   h+='<div class="judge '+(ok?"ok":"ng")+'"><span class="jl">'+(ok?"✓ 成立":"✕ 不足")+"</span>"+
@@ -3416,8 +3618,12 @@ function calcBeam(){
   if(delta>b.L/50)w+='<div class="warn">⚠ たわみが非常に大きく、微小変形理論の範囲を超えています。断面を大きくしてください。</div>';
   warnEl.innerHTML=w;
 
-  $("#beamNote").innerHTML="※ δ・Mの式は材料力学の標準解です（"+bc.n+"）。自重は考慮していません。長スパンでは自重を等分布荷重として加えてください"+
-    (b.src==="steel"?"（この断面の自重 ≈ "+(sec.A*0.00785*9.80665).toFixed(1)+" N/m）":"")+"。";
+  $("#beamNote").innerHTML="※ δ・Mの式は材料力学の標準解です（"+bc.n+"）。"+
+    (b.self
+      ? "自重は全長にかかる等分布荷重として、同じ支持条件の式で重ね合わせています（線形弾性のため加算できます）。"+
+        (bc.pos?"<b>任意位置集中では、荷重によるδ・Mの最大位置（荷重点）と自重の最大位置（中央）がずれる</b>ため、単純加算した本表示はやや大きめ＝安全側に出ます。":"")+
+        "型鋼は隅Rを無視した公称寸法から断面積を出しているため、自重も規格表の単位質量とは数%ずれます。"
+      : "<b>自重を無視して計算しています。</b>長スパン・重い型鋼では自重が効くので、「自重を含める」に切り替えて確認してください。");
 
   drawBeamCase(bc,bc.pos?a/b.L:null);
   drawBeamSection();
@@ -3431,8 +3637,9 @@ function calcBeam(){
       (bc.load==="w"?"等分布荷重 w: "+b.w+" N/m":null),
       (bc.load==="M"?"モーメント M: "+b.M0+" N・m":null),
       (bc.pos?"荷重位置 a: "+b.a+" mm（左端から）":null),
-      "材料: "+m.n+"（"+m.std+"、E="+m.E+" GPa）",
+      "材料: "+m.n+"（"+m.std+"、E="+m.E+" GPa、ρ="+(m.rho||7.85)+" g/cm³）",
       "安全率 S: "+Sef+(m.brittle?"（脆性材のため指定+1）":""),
+      "自重: "+(b.self?"含める（"+(wSelf*1000).toFixed(1)+" N/m）":"含めない"),
       "たわみ許容基準: "+(b.defl>0?"L/"+b.defl:"指定なし"),
       "【計算結果】"].filter(Boolean)
       .concat(b.src==="steel"?rowsFromDOM("#beamSecInfo"):[])
@@ -3587,6 +3794,12 @@ $("#beamDefl").querySelectorAll("button").forEach(b=>{
     beamState.defl=+b.dataset.d;calcBeam();
   };
 });
+$("#beamSelf").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    $("#beamSelf").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    beamState.self=+b.dataset.s;calcBeam();
+  };
+});
 [["#bmRd","d","rd"],["#bmPd","d","pd"],["#bmPt","d","pt"],["#bmRb","d","rb"],["#bmRh","d","rh"],
  ["#bmBb","d","bb"],["#bmBh","d","bh"],["#bmBt","d","bt"]].forEach(([sel,obj,key])=>{
   $(sel).addEventListener("input",e=>{
@@ -3612,6 +3825,9 @@ RESTORE.beam=st=>{
   $("#beamAxis").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.a===b.axis));
   $("#beamSfSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.s===b.sf));
   $("#beamDefl").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.d===b.defl));
+  // 履歴が自重の追加より前のものだと self が無いので、既定（含める）に寄せる
+  if(b.self===undefined)b.self=1;
+  $("#beamSelf").querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.s===b.self));
   $("#bmRd").value=b.d.rd;$("#bmPd").value=b.d.pd;$("#bmPt").value=b.d.pt;
   $("#bmRb").value=b.d.rb;$("#bmRh").value=b.d.rh;
   $("#bmBb").value=b.d.bb;$("#bmBh").value=b.d.bh;$("#bmBt").value=b.d.bt;
