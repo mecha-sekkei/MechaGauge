@@ -330,6 +330,60 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
 #adBanner .ad-mark{align-self:flex-start;margin:4px 6px 0 0;font-size:.58rem;color:var(--ink-dim);
   border:1px solid var(--line);border-radius:4px;padding:1px 4px;flex:0 0 auto;}
 
+/* ============ トップ画面 ============
+   起動直後にワンタップで機能へ入れるようにする。方眼＋製図枠の意匠。
+   1件は「アイコン横に名称・その下に補足」。高さを抑えて8機能を1画面に収める。
+   機能が9・10と増えても下に積み上がるだけで破綻しない。 */
+#screen-home{position:relative;}
+.hm-paper{position:absolute;inset:-8px 0 0;pointer-events:none;opacity:.5;z-index:0;
+  background-image:linear-gradient(rgba(120,150,180,.055) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(120,150,180,.055) 1px,transparent 1px);
+  background-size:26px 26px;}
+.hm-in{position:relative;z-index:1;}
+.hm-tag{display:inline-flex;align-items:center;font-size:.6rem;font-weight:800;
+  letter-spacing:.14em;color:#0E1116;background:var(--tone);border-radius:4px;padding:3px 8px;
+  margin-bottom:9px;}
+/* 角の切り欠きが製図枠に見える。ここがこの画面の意匠の要 */
+.hm-cut{clip-path:polygon(0 0,calc(100% - 11px) 0,100% 11px,100% 100%,0 100%);}
+.hm-last{position:relative;display:flex;align-items:center;gap:14px;width:100%;
+  padding:14px 15px;background:var(--panel);border:1.5px solid var(--tone);text-align:left;
+  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));
+  color:inherit;font:inherit;margin-bottom:14px;}
+.hm-last .ic{width:48px;height:48px;flex:0 0 auto;display:grid;place-items:center;color:var(--tone);}
+.hm-last .nm{display:block;font-size:1rem;font-weight:800;}
+.hm-last .sb{display:block;font-size:.68rem;color:var(--ink-dim);margin-top:4px;
+  font-family:ui-monospace,"SF Mono",Menlo,monospace;}
+.hm-last .no{margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:.66rem;
+  color:var(--tone);opacity:.8;}
+
+.hm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* min-width:0 を入れないとグリッドの列が中身の幅まで広がり、画面からはみ出す */
+.hm-cell{position:relative;background:var(--panel);border:1px solid var(--line);
+  padding:13px 12px 12px;min-height:84px;text-align:left;color:inherit;font:inherit;
+  display:block;min-width:0;-webkit-appearance:none;}
+.hm-cell .rule{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--tone);opacity:.55;}
+.hm-cell .top{display:flex;align-items:center;gap:10px;}
+.hm-cell .ic{width:36px;height:36px;flex:0 0 auto;display:grid;place-items:center;color:var(--tone);}
+/* 名称は1行に収める。折り返すと行がガタついて安っぽく見える */
+.hm-cell .nm{font-size:.86rem;font-weight:800;line-height:1.25;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hm-cell .sb{display:block;margin-top:7px;padding-right:24px;font-size:.6rem;color:var(--ink-dim);
+  font-family:ui-monospace,"SF Mono",Menlo,monospace;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hm-cell .no{position:absolute;bottom:11px;right:11px;font-family:ui-monospace,Menlo,monospace;
+  font-size:.56rem;color:var(--ink-dim);opacity:.55;}
+.hm-cell:active,.hm-last:active{transform:scale(.985);}
+
+/* 計算機能ではないので、グリッドと張り合わない見た目にする */
+.hm-voice{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;
+  padding:12px 14px;background:var(--panel);border:1px dashed var(--line);
+  text-align:left;color:inherit;font:inherit;}
+.hm-voice .ic{width:32px;height:32px;flex:0 0 auto;display:grid;place-items:center;color:var(--ink-dim);}
+.hm-voice .nm{display:block;font-size:.84rem;font-weight:800;}
+.hm-voice .sb{display:block;font-size:.6rem;color:var(--ink-dim);margin-top:3px;
+  font-family:ui-monospace,Menlo,monospace;}
+.hm-voice .go{margin-left:auto;color:var(--ink-dim);}
+
 /* ---- みんなの声（掲示板） ---- */
 .bd-note{font-size:.72rem;color:var(--ink-dim);line-height:1.7;background:var(--panel2);
   border:1px solid var(--line);border-radius:11px;padding:9px 11px;margin-bottom:10px;}
@@ -416,9 +470,10 @@ body.adsense-on #adInline{display:block;}
 
 <header>
   <button class="hbtn" id="btnMenu" aria-label="機能メニュー">☰</button>
-  <div class="ttl">
+  <!-- タイトルを押すとトップへ戻る。ドロワーを開かずに戻れるようにしておく -->
+  <div class="ttl" id="btnHome" role="button" tabindex="0">
     <h1>Mecha Gauge</h1>
-    <span class="sub" id="hdSub">はめあい公差</span>
+    <span class="sub" id="hdSub">ホーム</span>
   </div>
   <button class="hbtn" id="btnRef" aria-label="早見表・履歴">📖</button>
 </header>
@@ -426,8 +481,25 @@ body.adsense-on #adInline{display:block;}
 <div class="edge-hint l"></div>
 <div class="edge-hint r"></div>
 
+<!-- ================= トップ ================= -->
+<main class="screen active" id="screen-home">
+  <div class="hm-paper"></div>
+  <div class="hm-in">
+    <div id="homeLast"></div>
+    <div class="hm-grid" id="homeGrid"></div>
+    <button class="hm-voice hm-cut" id="homeVoice">
+      <span class="ic" data-hic="board"></span>
+      <span class="tx">
+        <span class="nm">みんなの声・要望</span>
+        <span class="sb">ほしい機能に 👍 を押す</span>
+      </span>
+      <span class="go"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+    </button>
+  </div>
+</main>
+
 <!-- ================= はめあい ================= -->
-<main class="screen active" id="screen-fit">
+<main class="screen" id="screen-fit">
 
   <div class="card">
     <h2>呼び径（1〜500 mm）</h2>
@@ -4551,7 +4623,93 @@ const INFO_SCREENS=[
   {id:"about", icon:"ⓘ", name:"使い方・単位について"},
   {id:"legal", icon:"⚖", name:"免責・規格の出典"}
 ];
-let curScreen="fit";
+const HOME_SCREEN={id:"home", icon:"⌂", name:"ホーム", sub:"よく使う機能へ1タップで"};
+const ALL_SCREENS=[HOME_SCREEN].concat(SCREENS,INFO_SCREENS);
+
+/* ---- トップ画面 ----
+   機能ごとの色・番号・記号。番号は SCREENS の並び順（覚えやすいよう固定）。
+   hn = タイル用の短い表示名。狭い画面だと7文字を超えると末尾が切れるため、
+   長いものだけ縮めている（正式名はヘッダーとメニューに出る）。 */
+const HOME_META={
+  fit     :{tone:"#4FC3F7", sb:"JIS B 0401"},
+  screw   :{tone:"#B39DFF", sb:"d2 / d1 / 下穴"},
+  trig    :{tone:"#FFB74D", sb:"θ / テーパ比",  hn:"三角関数"},
+  strength:{tone:"#7DD3FC", sb:"Ff / T / τ",   hn:"ボルト・軸"},
+  cut     :{tone:"#FCA5A5", sb:"n / Vf / Pc / Rz"},
+  beam    :{tone:"#86EFAC", sb:"δ / M / σ",    hn:"梁のたわみ"},
+  tact    :{tone:"#FBBF24", sb:"台形加減速 / F", hn:"タクトタイム"},
+  weight  :{tone:"#5EEAD4", sb:"ρ · V · n"}
+};
+/* 24pxまで縮んでも潰れないよう、1つにつき3〜4要素までに抑えている */
+const HOME_ICONS={
+  fit:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.4"/><path d="M12 3v1.8M12 19.2V21"/>',
+  screw:'<path d="M8.4 2.8h7.2v3.6H8.4z"/><path d="M9.9 6.4h4.2v12.2L12 21.2l-2.1-2.6z"/>'+
+        '<path d="M9.9 9.4h4.2M9.9 12.2h4.2M9.9 15h4.2"/>',
+  trig:'<path d="M4.2 19.4h15.6L4.2 5.2z"/><path d="M4.2 16.4h3v3"/>'+
+       '<path d="M11.4 19.4a7.2 7.2 0 0 0-1.4-4"/>',
+  strength:'<path d="M12 2.6l8.1 4.7v9.4L12 21.4l-8.1-4.7V7.3z"/>'+
+       '<path d="M12 8.2l3.3 1.9v3.8L12 15.8l-3.3-1.9v-3.8z"/>',
+  cut:'<path d="M9 2.6h4.2v12.2H9z"/><path d="M9.6 5.6l3-1.4M9.6 8.4l3-1.4M9.6 11.2l3-1.4"/>'+
+      '<path d="M2.6 14.8H9v5.8h12.4v-5.8h-8.2"/>',
+  beam:'<path d="M3.6 7.2c4.6 7.4 12.2 7.4 16.8 0"/>'+
+       '<path d="M3.6 7.2L1.4 11.6h4.4zM20.4 7.2l-2.2 4.4h4.4z"/>'+
+       '<path d="M12 1.8v3.8M10.3 4L12 5.7l1.7-1.7"/>',
+  tact:'<path d="M3.2 19.6V4.4M3.2 19.6h17.6"/><path d="M5.8 19.6l3.2-8.6h5.6l3.2 8.6"/>',
+  weight:'<path d="M12 3.6v16M8.2 19.6h7.6"/><path d="M4.4 7.2h15.2"/>'+
+         '<path d="M4.4 7.2L2 12.6h4.8zM19.6 7.2l-2.4 5.4h4.8z"/>',
+  board:'<path d="M3 4.4h18v12H9.6L5.4 20.4v-4H3z"/><path d="M7 8.6h10M7 12.2h6.6"/>'
+};
+function homeIcon(k,size){
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" '+
+    'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+
+    (HOME_ICONS[k]||"")+'</svg>';
+}
+
+/* 使った順の記録。次に開いたとき上に来るようにするためだけに使う（端末内のみ） */
+const HOME_KEY="mg_home_used";
+function homeUsed(){
+  try{return JSON.parse(localStorage.getItem(HOME_KEY))||{};}catch(e){return {};}
+}
+function homeTouch(id){
+  if(!SCREENS.some(s=>s.id===id))return;
+  const u=homeUsed();u[id]=Date.now();
+  try{localStorage.setItem(HOME_KEY,JSON.stringify(u));}catch(e){}
+}
+/* 使った時刻の新しい順。未使用は元の並びのまま後ろへ（sortが安定なので保たれる） */
+function homeOrder(){
+  const u=homeUsed();
+  return SCREENS.map((s,i)=>({s,i,t:u[s.id]||0}))
+    .sort((a,b)=>(b.t-a.t)||(a.i-b.i)).map(x=>x.s);
+}
+function renderHome(){
+  const order=homeOrder(), used=homeUsed();
+  const no=id=>String(SCREENS.findIndex(s=>s.id===id)+1).padStart(2,"0");
+  const cell=s=>{
+    const m=HOME_META[s.id]||{tone:"var(--accent)",sb:""};
+    return '<button class="hm-cell hm-cut" data-go="'+s.id+'" style="--tone:'+m.tone+'">'+
+      '<span class="top"><span class="ic">'+homeIcon(s.id,22)+'</span>'+
+      '<span class="nm">'+esc(m.hn||s.name)+'</span></span>'+
+      '<span class="sb">'+esc(m.sb)+'</span>'+
+      '<span class="no">'+no(s.id)+'</span><span class="rule"></span></button>';
+  };
+  // 一度も使っていないうちは「前回のつづき」を出さず、8件をそのまま並べる
+  const hasUsed=order.length&&used[order[0].id];
+  const lastEl=$("#homeLast");
+  if(hasUsed){
+    const s=order[0], m=HOME_META[s.id]||{tone:"var(--accent)",sb:""};
+    lastEl.innerHTML='<span class="hm-tag" style="--tone:'+m.tone+'">前回のつづき</span>'+
+      '<button class="hm-last" data-go="'+s.id+'" style="--tone:'+m.tone+'">'+
+      '<span class="ic">'+homeIcon(s.id,32)+'</span>'+
+      '<span class="tx"><span class="nm">'+esc(s.name)+'</span>'+
+      '<span class="sb">'+esc(m.sb)+'</span></span>'+
+      '<span class="no">'+no(s.id)+'</span></button>';
+  }else lastEl.innerHTML="";
+  $("#homeGrid").innerHTML=(hasUsed?order.slice(1):order).map(cell).join("");
+  $("#screen-home").querySelectorAll("[data-go]").forEach(b=>{
+    b.onclick=()=>showScreen(b.dataset.go);
+  });
+}
+let curScreen="home";
 
 function buildMenu(){
   const body=$("#menuBody");body.innerHTML="";
@@ -4564,6 +4722,8 @@ function buildMenu(){
     b.onclick=()=>showScreen(s.id);
     return b;
   };
+  body.appendChild(item(HOME_SCREEN));
+  const sep0=document.createElement("div");sep0.className="dw-sep";body.appendChild(sep0);
   const lab=document.createElement("div");lab.className="dw-lab";lab.textContent="計算ツール";
   body.appendChild(lab);
   SCREENS.forEach(s=>body.appendChild(item(s)));
@@ -4574,8 +4734,11 @@ function buildMenu(){
 function showScreen(id){
   // どの機能を見ていて要望を書いたのかを掲示板に添えるため、直前の計算画面を覚えておく
   if(id==="board"&&SCREENS.some(s=>s.id===curScreen))curScreenBefore=curScreen;
+  // 使った順にトップへ並べ替えるので、開いた時刻を控える
+  homeTouch(id);
+  if(id==="home")renderHome();
   curScreen=id;
-  const all=SCREENS.concat(INFO_SCREENS);
+  const all=ALL_SCREENS;
   all.forEach(s=>$("#screen-"+s.id).classList.toggle("active",s.id===id));
   const s=all.find(x=>x.id===id);
   $("#hdSub").textContent=s?s.name:"";
@@ -5240,6 +5403,7 @@ function initAdsense(){
 
 /* init */
 buildMenu();
+renderHome();
 buildFitWheels();render();
 buildScrewWheel();
 solveTri();solveTaper();
@@ -5253,6 +5417,16 @@ $("#wtSearch").value="";
 buildWeightUI();calcWeight();
 renderRef();
 initBoard();
+$("#btnHome").onclick=()=>showScreen("home");
+/* 掲示板は開いてから取りに行くと待たされるので、起動後に裏で先読みしておく。
+   計算機能の初期描画を邪魔しないよう、暇になってから・低い優先度で走らせる。
+   失敗しても何も出さない（開いたときに改めて案内が出る）。 */
+(function preloadBoard(){
+  if(!BOARD.url)return;
+  const go=()=>{ bdLoad(false).catch(()=>{}); };
+  if("requestIdleCallback" in window)requestIdleCallback(go,{timeout:3000});
+  else setTimeout(go,1200);
+})();
 initDiaToggles();
 // 起動直後の初期描画で履歴が積まれないよう、保留中の1件だけ捨てる
 clearTimeout(histTimer);histPending=null;
