@@ -415,6 +415,8 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
 /* いいね。押した状態がひと目で分かるよう塗りを変える */
 .bd-like{display:flex;align-items:center;gap:5px;min-width:56px;justify-content:center;}
 .bd-like.on{color:var(--accent);border-color:var(--accent);background:rgba(79,195,247,.12);}
+/* 送信中。押せなくはしない（見た目はもう変わっているので待たせる必要がない） */
+.bd-like.sending{opacity:.6;}
 .bd-like .n{font-size:.82rem;font-variant-numeric:tabular-nums;}
 .bd-like:disabled{opacity:.5;}
 /* 要望として支持が多いものは、数字だけでなく枠でも分かるようにする */
@@ -5120,7 +5122,7 @@ function initBanner(){
    ブラウザがプリフライト(OPTIONS)を送るが、Apps Script はそれに応答できず失敗する。
    ========================================================= */
 const BOARD = {
-  url: "https://script.google.com/macros/s/AKfycbyfbXm6vF5KlNWraverolKnEh1Gnr1l4tcTU30xcQHLOb9G09fjDjohU9s0gQjU0SoE/exec",
+  url: "https://script.google.com/macros/s/AKfycbzmSX5uVuhtxfnbDFVhyu5EYJKv1oBnaWW_7HArNgxOwju3MXzFS5tiXy9kFGd7OJNZTg/exec",
   maxBody: 400
 };
 let bdPosts=[], bdLoaded=false, bdReplyTo="", bdBusy=false, bdSort="new";
@@ -5171,6 +5173,8 @@ async function bdLoad(force){
     if(!j.ok)throw new Error(j.error||"取得に失敗しました");
     bdPosts=j.posts||[];
     bdLoaded=true;
+    // 取り直した内容が正なので、送信待ちの控えは捨てる（送信中のものだけ残す）
+    Object.keys(bdLikeQ).forEach(k=>{if(!bdLikeQ[k].busy)delete bdLikeQ[k];});
     bdRender();
   }catch(e){
     // 計算機能はすべて端末内で動くので、ここが落ちてもアプリ自体は使える
@@ -5230,22 +5234,36 @@ function bdRender(){
   box.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>bdReport(b.dataset.report,b));
 }
 
-/**
- * いいね。1端末につき1件で、もう一度押すと取り消せる。
- * 押し心地を優先して先に見た目を変え、サーバーの返事で正しい値へ直す。
- * 失敗したら元に戻す（数字が実際とずれたままにならないように）。
- */
-async function bdLike(id,btn){
-  if(!BOARD.url||btn.disabled)return;
+/* いいね。1端末につき1件で、もう一度押すと取り消せる。
+   Apps Script は応答に3秒前後かかる。押すたびにボタンを止めると
+   その間まったく反応せず「押せない」と感じるので、
+   ・見た目はその場でトグルする
+   ・送信は少し待ってから、落ち着いた状態との差分だけを1回出す
+   連打しても通信は1回で済み、押して戻したなら通信自体が起きない。 */
+const bdLikeQ={};                       // 投稿id -> {want, server, timer, busy}
+function bdPaintLike(btn,p){
+  if(!btn)return;
+  btn.classList.toggle("on",!!p.liked);
+  btn.setAttribute("aria-pressed",p.liked?"true":"false");
+  const n=btn.querySelector(".n");if(n)n.textContent=p.likes;
+}
+function bdLike(id,btn){
+  if(!BOARD.url)return;
   const p=bdPosts.find(x=>x.id===id);
   if(!p)return;
-  const was={liked:!!p.liked,likes:p.likes||0};
-  p.liked=!was.liked;
-  p.likes=Math.max(0,was.likes+(p.liked?1:-1));
-  btn.classList.toggle("on",p.liked);
-  btn.setAttribute("aria-pressed",p.liked?"true":"false");
-  btn.querySelector(".n").textContent=p.likes;
-  btn.disabled=true;
+  const q=bdLikeQ[id]||(bdLikeQ[id]={server:!!p.liked});
+  p.liked=!p.liked;
+  p.likes=Math.max(0,(p.likes||0)+(p.liked?1:-1));
+  bdPaintLike(btn,p);
+  q.want=p.liked;
+  clearTimeout(q.timer);
+  q.timer=setTimeout(()=>bdFlushLike(id,btn),600);
+}
+async function bdFlushLike(id,btn){
+  const q=bdLikeQ[id];
+  if(!q||q.busy||q.want===q.server)return;   // 押して戻したなら送らない
+  q.busy=true;
+  if(btn)btn.classList.add("sending");
   try{
     const r=await fetch(BOARD.url,{
       method:"POST",
@@ -5254,19 +5272,20 @@ async function bdLike(id,btn){
     });
     const j=await r.json();
     if(!j.ok)throw new Error(j.error||"failed");
-    p.liked=!!j.liked; p.likes=j.likes;
-    btn.classList.toggle("on",p.liked);
-    btn.setAttribute("aria-pressed",p.liked?"true":"false");
-    btn.querySelector(".n").textContent=p.likes;
+    q.server=!!j.liked;
+    const p=bdPosts.find(x=>x.id===id);
+    if(p){p.liked=!!j.liked;p.likes=j.likes;bdPaintLike(btn,p);}
   }catch(e){
-    p.liked=was.liked; p.likes=was.likes;
-    btn.classList.toggle("on",was.liked);
-    btn.setAttribute("aria-pressed",was.liked?"true":"false");
-    btn.querySelector(".n").textContent=was.likes;
+    // 手元の数字が実際とずれたままになるのが一番困るので、取り直して合わせる
     bdSay("いいねを送れませんでした。通信環境を確認してください。","ng");
+    delete bdLikeQ[id];
+    bdLoad(true);
+    return;
   }finally{
-    btn.disabled=false;
+    if(q)q.busy=false;
+    if(btn)btn.classList.remove("sending");
   }
+  if(q.want!==q.server)bdFlushLike(id,btn);   // 送信中にまた押されていたら追いかける
 }
 
 function bdStartReply(id){
