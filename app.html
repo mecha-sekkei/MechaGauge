@@ -5189,19 +5189,31 @@ function bdRender(){
     box.innerHTML='<div class="empty">まだ投稿がありません。<br>最初の一件をどうぞ。</div>';
     return;
   }
-  // 返信は親の直下に古い順。親の並びだけを新着順／いいね順で切り替える
-  let parents=bdPosts.filter(p=>!p.replyTo).slice().reverse();
+  /* ★ どの投稿も必ず1回は描く。
+     以前は「親の直下の返信」までしか描いていなかったため、
+     返信にさらに返信すると画面から消えていた（投稿は成功しているのに見えない）。
+     ルートまで遡ってまとめ、字下げは1段だけにする（深くすると狭い画面で潰れる）。 */
+  const byId=new Map(bdPosts.map(p=>[p.id,p]));
+  const rootOf=p=>{
+    let cur=p,guard=0;
+    while(cur.replyTo&&byId.has(cur.replyTo)&&guard++<50)cur=byId.get(cur.replyTo);
+    return cur;   // 親が消された返信は自分自身が根になる（迷子にしない）
+  };
+  const kids=new Map();
+  bdPosts.forEach(p=>{
+    const r=rootOf(p);
+    if(r.id===p.id)return;
+    if(!kids.has(r.id))kids.set(r.id,[]);
+    kids.get(r.id).push(p);      // bdPostsが古い順なので、返信も古い順に積まれる
+  });
+  let roots=bdPosts.filter(p=>rootOf(p).id===p.id).reverse();
   if(bdSort==="like"){
     // いいねが同数なら新しいものを上に（reverse済みなので順序はそのまま）
-    parents=parents.slice().sort((a,b)=>(b.likes||0)-(a.likes||0));
+    roots=roots.slice().sort((a,b)=>(b.likes||0)-(a.likes||0));
   }
-  const repliesOf=id=>bdPosts.filter(p=>p.replyTo===id);
-  // 親が消された（通報で非表示など）返信は迷子になるため、末尾にまとめて出す
-  const known=new Set(bdPosts.map(p=>p.id));
-  const orphans=bdPosts.filter(p=>p.replyTo&&!known.has(p.replyTo));
 
   // いいね順のとき、支持が集まっている上位を目立たせる（1件以上ついたものだけ）
-  const top=parents.filter(p=>(p.likes||0)>0).slice(0,3).map(p=>p.id);
+  const top=roots.filter(p=>(p.likes||0)>0).slice(0,3).map(p=>p.id);
 
   let html="";
   const card=(p,isReply)=>{
@@ -5222,11 +5234,10 @@ function bdRender(){
         '<button data-report="'+esc(p.id)+'">通報</button>'+
       '</div></div>';
   };
-  parents.forEach(p=>{
+  roots.forEach(p=>{
     html+=card(p,false);
-    repliesOf(p.id).forEach(r=>{html+=card(r,true);});
+    (kids.get(p.id)||[]).forEach(r=>{html+=card(r,true);});
   });
-  orphans.forEach(o=>{html+=card(o,false);});
   box.innerHTML=html;
 
   box.querySelectorAll("[data-like]").forEach(b=>b.onclick=()=>bdLike(b.dataset.like,b));
