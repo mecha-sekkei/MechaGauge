@@ -1700,24 +1700,58 @@ function saveScreenImage(screen,btn){
   wrapText(x,L.title,M,y,W-M*2,52);y+=52*countLines(x,L.title,W-M*2)+30;
   x.strokeStyle="#B9C4CF";x.lineWidth=2;
   x.beginPath();x.moveTo(M,y);x.lineTo(W-M,y);x.stroke();y+=46;
-  // 明細
-  x.font="32px sans-serif";
-  L.lines.forEach(line=>{
+  /* 明細は2段組で流し込む。
+     1行に「項目: 値」しか置かないと右半分がまるごと空き、
+     行数の多い画面（タクトタイムは30行あった）がA4に収まらなくなる。
+     半分の幅で2行を超えるものと見出しは、その項目だけ全幅で置く。 */
+  const GAP=44, COLW=(W-M*2-GAP)/2;
+  let col=0, rowTop=y, rowH=0;
+  const flush=()=>{ if(col>0){y=rowTop+rowH;col=0;rowH=0;} rowTop=y; };
+  // 幅wに置いたときの高さ。描画せず測るだけ
+  const measure=(line,w)=>{
+    line=String(line==null?"":line);      // 空要素が紛れても画像生成ごと落とさない
     const i=line.indexOf(":");
+    x.font="32px sans-serif";
+    if(i>0){
+      const kw=x.measureText(line.slice(0,i+1)).width;
+      x.font="bold 32px sans-serif";
+      const n=countLines(x,line.slice(i+1).trim(),w-kw-16);
+      x.font="32px sans-serif";
+      return 42*n+14;
+    }
+    return 42*countLines(x,line,w)+14;
+  };
+  const put=(line,X,Y,w)=>{
+    const i=line.indexOf(":");
+    x.font="32px sans-serif";
     if(i>0){
       const k=line.slice(0,i+1),v=line.slice(i+1).trim();
-      x.fillStyle="#55636F";x.fillText(k,M,y);
+      x.fillStyle="#55636F";x.fillText(k,X,Y);
       const kw=x.measureText(k).width;
       x.fillStyle="#111820";x.font="bold 32px sans-serif";
-      const maxV=W-M*2-kw-16;
-      wrapText(x,v,M+kw+16,y,maxV,42);
-      y+=42*countLines(x,v,maxV)+14;
+      const mv=w-kw-16;
+      wrapText(x,v,X+kw+16,Y,mv,42);
+      const h=42*countLines(x,v,mv)+14;
       x.font="32px sans-serif";
-    }else{
-      x.fillStyle="#111820";wrapText(x,line,M,y,W-M*2,42);
-      y+=42*countLines(x,line,W-M*2)+14;
+      return h;
     }
+    x.fillStyle="#111820";wrapText(x,line,X,Y,w,42);
+    return 42*countLines(x,line,w)+14;
+  };
+  L.lines.forEach(line=>{
+    const head=/^【/.test(line);
+    if(head||measure(line,COLW)>42*2+14){        // 見出しと長い項目は全幅
+      flush();
+      if(head)y+=8;
+      y+=put(line,M,y,W-M*2);
+      rowTop=y;
+      return;
+    }
+    put(line,M+col*(COLW+GAP),rowTop,COLW);
+    rowH=Math.max(rowH,measure(line,COLW));
+    if(++col>=2)flush();
   });
+  flush();
   y+=14;
   // 警告・注意書き（安全に関わるので必ず載せる）
   if(L.notes&&L.notes.length){
@@ -1752,28 +1786,42 @@ function saveScreenImage(screen,btn){
     downloadCanvas(out,screen,btn);
   };
   if(!diagrams.length){finish();return;}
-  let idx=0;
-  const drawNext=()=>{
-    if(idx>=diagrams.length){finish();return;}
-    const d=diagrams[idx++];
-    const maxW=W-M*2;
-    // 高さは伸ばしてあるので「入らないから捨てる」は起こらない。
-    // それでも上限に当たったときだけ縮めて必ず載せる。
-    const availH=H-M-90-y;
-    let scale=Math.min(maxW/d.w,520/d.h);
-    if(d.h*scale>availH)scale=Math.min(maxW/d.w,Math.max(120,availH)/d.h);
-    const dw=d.w*scale,dh=d.h*scale;
+  /* 図も2枚あるときは横に並べる。360幅の図を1434幅いっぱいに引き伸ばしても
+     見やすくならず、縦だけを食うため。1枚だけのときは全幅で大きく出す。 */
+  const load=d=>new Promise(res=>{
     const img=new Image();
-    img.onload=()=>{
-      x.fillStyle="#F7F9FB";x.fillRect(M,y,maxW,dh+24);
-      x.strokeStyle="#B9C4CF";x.lineWidth=2;x.strokeRect(M,y,maxW,dh+24);
-      x.drawImage(img,M+(maxW-dw)/2,y+12,dw,dh);
-      y+=dh+44;drawNext();
-    };
-    img.onerror=()=>{drawNext();};
+    img.onload=()=>res(img); img.onerror=()=>res(null);
     img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(d.xml);
+  });
+  const cell=(d,img,X,W2,H2)=>{
+    x.fillStyle="#F7F9FB";x.fillRect(X,y,W2,H2+24);
+    x.strokeStyle="#B9C4CF";x.lineWidth=2;x.strokeRect(X,y,W2,H2+24);
+    if(img){
+      const s=Math.min(W2/d.w,H2/d.h);
+      x.drawImage(img,X+(W2-d.w*s)/2,y+12,d.w*s,d.h*s);
+    }
   };
-  drawNext();
+  (async()=>{
+    let i=0;
+    while(i<diagrams.length){
+      const pair=(diagrams.length-i>=2)?diagrams.slice(i,i+2):[diagrams[i]];
+      const imgs=await Promise.all(pair.map(load));
+      if(pair.length===2){
+        const h=Math.max(...pair.map(d=>Math.min(COLW/d.w,420/d.h)*d.h));
+        pair.forEach((d,k)=>cell(d,imgs[k],M+k*(COLW+GAP),COLW,h));
+        y+=h+44;
+      }else{
+        const d=pair[0];
+        const availH=H-M-90-y;
+        let h=Math.min((W-M*2)/d.w,520/d.h)*d.h;
+        if(h>availH)h=Math.max(120,availH);
+        cell(d,imgs[0],M,W-M*2,h);
+        y+=h+44;
+      }
+      i+=pair.length;
+    }
+    finish();
+  })();
 }
 function countLines(ctx,text,maxW){
   let n=1,line="";
@@ -3590,7 +3638,9 @@ function calcBeam(){
   const okD=dLim==null||delta<=dLim, okS=sig<=siga;
 
   let h="";
-  h+=resRow("断面",sec.name,"I="+(sec.I/1e4).toFixed(1)+" cm⁴ ／ Z="+(sec.Z/1e3).toFixed(1)+" cm³");
+  // 型鋼のときは、すぐ上のサマリで A・I・Z を出しているので繰り返さない
+  h+=resRow("断面",sec.name,b.src==="steel"?"":
+    "I="+(sec.I/1e4).toFixed(1)+" cm⁴ ／ Z="+(sec.Z/1e3).toFixed(1)+" cm³");
   if(b.self){
     h+=resRow("梁の自重",(wSelf*1000).toFixed(1)+" N/m",
       (wSelf*1000/9.80665).toFixed(2)+" kg/m ／ 全長 "+(wSelf*b.L).toFixed(0)+" N（"+
@@ -3628,8 +3678,8 @@ function calcBeam(){
   drawBeamCase(bc,bc.pos?a/b.L:null);
   drawBeamSection();
   LAST.beam={title:"梁のたわみ　"+sec.name+"　"+bc.n,
+    // 断面名は【計算結果】の先頭行が画面から拾ってくるので、ここでは書かない
     lines:["【入力条件】",
-      "断面: "+sec.name,
       (b.src==="steel"?"種別: "+(BEAM_FAMS.find(f=>f.id===b.fam)||{}).n:null),
       "支持条件・荷重: "+bc.n,
       "スパン L: "+b.L+" mm",
@@ -3644,7 +3694,8 @@ function calcBeam(){
       "【計算結果】"].filter(Boolean)
       .concat(b.src==="steel"?rowsFromDOM("#beamSecInfo"):[])
       .concat(rowsFromDOM("#beamOut"))
-      .concat(["根拠: 材料力学の標準たわみ式（"+bc.n+"）。自重は含まない"]),
+      .concat(["根拠: 材料力学の標準たわみ式（"+bc.n+"）。"+
+        (b.self?"自重は等分布荷重として重ね合わせ":"自重は含まない")]),
     notes:notesFromDOM("#beamWarn")};
   pushHistory({s:"beam",t:sec.name,
     d:bc.n+"　δ "+delta.toFixed(2)+" mm ／ σ "+sig.toFixed(1)+" MPa　"+(ok?"成立":"不足"),
@@ -3968,18 +4019,23 @@ function calcTact(){
     lines:["【入力条件】",
       "移動距離 L: "+L+" mm",
       "目標タクトタイム T: "+T+" s",
-      "加速度 a: "+(a/G_MMSS).toFixed(3)+" G（"+(a/1000).toFixed(2)+" m/s²）",
-      "減速度 d: "+(d/G_MMSS).toFixed(3)+" G（"+(d/1000).toFixed(2)+" m/s²）"+(s.sameAD?"（加速と同じ）":""),
+      // 加速＝減速のときは同じ数値が2行並ぶだけなので1行にまとめる
+      (s.sameAD
+        ? "加減速度 a=d: "+(a/G_MMSS).toFixed(3)+" G（"+(a/1000).toFixed(2)+" m/s²）"
+        : "加速度 a: "+(a/G_MMSS).toFixed(3)+" G（"+(a/1000).toFixed(2)+" m/s²）"),
+      (s.sameAD?null:"減速度 d: "+(d/G_MMSS).toFixed(3)+" G（"+(d/1000).toFixed(2)+" m/s²）"),
       "使う最高速度 V: "+V+" mm/s",
       "機種の上限: 速度 "+(vMax!=null?vMax+" mm/s":"指定なし")+" ／ 加減速度 "+(aMax!=null?s.aMaxG+" G":"指定なし"),
       "可搬質量 m: "+s.mass+" kg／摩擦係数 μ: "+s.mu+"／傾斜角 θ: "+s.theta+"°",
       "【判定】",
-      (cls==="ok"?"✓ ":"✕ ")+ttl]
+      (cls==="ok"?"✓ ":"✕ ")+ttl].filter(Boolean)
       .concat(sub.map(x=>"　"+x.replace(/<[^>]+>/g,"")))
+      /* 「間に合う最高速度」と「最短時間」は、下の【落とし所】が画面から
+         同じ数値を拾ってくるので、ここで手書きすると二重に載る。
+         成立しないときだけ、判定の理由として最短時間を出す。 */
       .concat(need.impossible
         ? ["必要な最高速度: この加減速度では目標に到達不可（最短 "+need.tMin.toFixed(3)+" s）"]
-        : ["目標 "+T+" s に間に合う最高速度: "+need.v.toFixed(1)+" mm/s 以上",
-           "この加減速度での最短時間: "+need.tMin.toFixed(3)+" s（速度無制限のとき）"])
+        : [])
       .concat(["【計算結果】"])
       .concat(rowsFromDOM("#tactOut"))
       .concat(["【落とし所】"])
