@@ -3194,9 +3194,15 @@ const fmtMin=t=>t>=1?t.toFixed(2)+" 分":(t*60).toFixed(1)+" 秒";
 
 function calcCut(){
   const m=cutMat();let h="",w="";
+  /* ★ コピー・画像の内容は、DOMに書き終えてから組み立てる。
+     以前はここより前で LAST.cut を作っていたため、rowsFromDOM が
+     1つ前の描画を読んでしまい、初回は結果が空・以降は前回値という
+     状態になっていた（画面は正しいのにコピーだけ合わない）。
+     入力条件だけ先に控えておき、結果行は最後にDOMから拾う。 */
+  let cTitle="",cHead=[],cBasis="";
   if(cutState.mode==="mill"){
     const c=cutState.mill;
-    if(!(c.D>0&&c.z>0&&c.Vc>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・z・Vc を正しく入力してください。</div>';return;}
+    if(!(c.D>0&&c.z>0&&c.Vc>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・z・Vc を正しく入力してください。</div>';LAST.cut=null;return;}
     const n=1000*c.Vc/(Math.PI*c.D), Vf=c.fz*c.z*n;
     const Q=c.ap*c.ae*Vf/1000, Pc=c.ap*c.ae*Vf*m.kc/(60e6*CUT_ETA);
     h+=resRow("回転数 n",Math.round(n)+" min⁻¹","1000Vc/(πD)",true);
@@ -3215,20 +3221,17 @@ function calcCut(){
       d:"n "+Math.round(n)+" ／ Vf "+Math.round(Vf)+" mm/min ／ "+Pc.toFixed(2)+" kW",
       st:JSON.parse(JSON.stringify(cutState))});
     drawCutMill(c);
-    LAST.cut={title:"切削条件　フライス φ"+c.D+"×"+c.z+"枚刃　"+m.id,
-      lines:["【入力条件】",
-        "被削材: "+m.id+"（"+m.n+"）／工具材種: "+({hss:"ハイス",ca:"超硬",co:"コーティング超硬"}[cutState.tool]),
-        "工具径 D: "+c.D+" mm／刃数 z: "+c.z,
-        "切削速度 Vc: "+c.Vc+" m/min／1刃送り fz: "+c.fz+" mm/刃",
-        "軸方向切込み ap: "+c.ap+" mm／径方向切込み ae: "+c.ae+" mm",
-        (c.L>0?"加工長 L: "+c.L+" mm":null),
-        "【計算結果】"].filter(Boolean)
-        .concat(rowsFromDOM("#cutOut"))
-        .concat(["根拠: Vc=πDn/1000、Vf=fz·z·n、Pc=ap·ae·Vf·kc/(60×10⁶·η)　kc="+m.kc+" MPa"]),
-      notes:notesFromDOM("#cutWarn")};
+    cTitle="切削条件　フライス φ"+c.D+"×"+c.z+"枚刃　"+m.id;
+    cHead=["【入力条件】",
+      "被削材: "+m.id+"（"+m.n+"）／工具材種: "+({hss:"ハイス",ca:"超硬",co:"コーティング超硬"}[cutState.tool]),
+      "工具径 D: "+c.D+" mm／刃数 z: "+c.z,
+      "切削速度 Vc: "+c.Vc+" m/min／1刃送り fz: "+c.fz+" mm/刃",
+      "軸方向切込み ap: "+c.ap+" mm／径方向切込み ae: "+c.ae+" mm",
+      (c.L>0?"加工長 L: "+c.L+" mm":null)].filter(Boolean);
+    cBasis="根拠: Vc=πDn/1000、Vf=fz·z·n、Pc=ap·ae·Vf·kc/(60×10⁶·η)　kc="+m.kc+" MPa";
   }else if(cutState.mode==="drill"){
     const c=cutState.drill;
-    if(!(c.D>0&&c.Vc>0&&c.f>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・Vc・f を正しく入力してください。</div>';return;}
+    if(!(c.D>0&&c.Vc>0&&c.f>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・Vc・f を正しく入力してください。</div>';LAST.cut=null;return;}
     const n=1000*c.Vc/(Math.PI*c.D), Vf=c.f*n;
     const tip=c.D/2*Math.tan(d2r(90-c.angle/2));
     const travel=c.dep+tip+2; // 空走2mm
@@ -3245,19 +3248,16 @@ function calcCut(){
       d:"n "+Math.round(n)+" ／ Vf "+Math.round(Vf)+" mm/min ／ 1穴 "+fmtMin(travel/Vf),
       st:JSON.parse(JSON.stringify(cutState))});
     drawCutDrill(c,tip);
-    LAST.cut={title:"切削条件　ドリル φ"+c.D+"　"+m.id,
-      lines:["【入力条件】",
-        "被削材: "+m.id+"（"+m.n+"）／工具材種: "+({hss:"ハイス",ca:"超硬",co:"コーティング超硬"}[cutState.tool]),
-        "ドリル径 D: "+c.D+" mm／先端角: "+c.angle+"°",
-        "切削速度 Vc: "+c.Vc+" m/min／送り f: "+c.f+" mm/rev",
-        "穴深さ: "+c.dep+" mm",
-        "【計算結果】"]
-        .concat(rowsFromDOM("#cutOut"))
-        .concat(["根拠: Vc=πDn/1000、Vf=f·n、先端円錐長 Lp=D/2·tan(90°−先端角/2)　kc="+m.kc+" MPa"]),
-      notes:notesFromDOM("#cutWarn")};
+    cTitle="切削条件　ドリル φ"+c.D+"　"+m.id;
+    cHead=["【入力条件】",
+      "被削材: "+m.id+"（"+m.n+"）／工具材種: "+({hss:"ハイス",ca:"超硬",co:"コーティング超硬"}[cutState.tool]),
+      "ドリル径 D: "+c.D+" mm／先端角: "+c.angle+"°",
+      "切削速度 Vc: "+c.Vc+" m/min／送り f: "+c.f+" mm/rev",
+      "穴深さ: "+c.dep+" mm"];
+    cBasis="根拠: Vc=πDn/1000、Vf=f·n、先端円錐長 Lp=D/2·tan(90°−先端角/2)　kc="+m.kc+" MPa";
   }else{
     const c=cutState.turn;
-    if(!(c.D>0&&c.Vc>0&&c.f>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・Vc・f を正しく入力してください。</div>';return;}
+    if(!(c.D>0&&c.Vc>0&&c.f>0)){$("#cutOut").innerHTML="";$("#cutWarn").innerHTML='<div class="warn">⚠ D・Vc・f を正しく入力してください。</div>';LAST.cut=null;return;}
     const n=1000*c.Vc/(Math.PI*c.D), Vf=c.f*n;
     const Q=c.ap*c.f*c.Vc, Pc=Q*m.kc/(60000*CUT_ETA);
     const Rz=c.f*c.f/(8*c.R)*1000;
@@ -3273,19 +3273,20 @@ function calcCut(){
       d:"n "+Math.round(n)+" ／ f "+c.f+" ／ Rz "+Rz.toFixed(1)+" μm",
       st:JSON.parse(JSON.stringify(cutState))});
     drawCutTurn(c,Rz);
-    LAST.cut={title:"切削条件　旋盤 φ"+c.D+"　"+m.id,
-      lines:["【入力条件】",
-        "被削材: "+m.id+"（"+m.n+"）／工具材種: "+({hss:"ハイス",ca:"超硬",co:"コーティング超硬"}[cutState.tool]),
-        "加工径 D: "+c.D+" mm",
-        "切削速度 Vc: "+c.Vc+" m/min／送り f: "+c.f+" mm/rev",
-        "切込み ap: "+c.ap+" mm／ノーズR: "+c.R+" mm",
-        (c.L>0?"加工長 L: "+c.L+" mm":null),
-        "【計算結果】"].filter(Boolean)
-        .concat(rowsFromDOM("#cutOut"))
-        .concat(["根拠: Vc=πDn/1000、理論粗さ Rz≈f²/(8·Rε)　kc="+m.kc+" MPa"]),
-      notes:notesFromDOM("#cutWarn")};
+    cTitle="切削条件　旋盤 φ"+c.D+"　"+m.id;
+    cHead=["【入力条件】",
+      "被削材: "+m.id+"（"+m.n+"）／工具材種: "+({hss:"ハイス",ca:"超硬",co:"コーティング超硬"}[cutState.tool]),
+      "加工径 D: "+c.D+" mm",
+      "切削速度 Vc: "+c.Vc+" m/min／送り f: "+c.f+" mm/rev",
+      "切込み ap: "+c.ap+" mm／ノーズR: "+c.R+" mm",
+      (c.L>0?"加工長 L: "+c.L+" mm":null)].filter(Boolean);
+    cBasis="根拠: Vc=πDn/1000、理論粗さ Rz≈f²/(8·Rε)　kc="+m.kc+" MPa";
   }
+  // 先にDOMへ書いてから、その内容をそのまま拾う（画面とコピーを必ず一致させる）
   $("#cutOut").innerHTML=h;$("#cutWarn").innerHTML=w;
+  LAST.cut={title:cTitle,
+    lines:cHead.concat(["【計算結果】"]).concat(rowsFromDOM("#cutOut")).concat([cBasis]),
+    notes:notesFromDOM("#cutWarn")};
 }
 /* フライスの図は「上から見た図」と「横から見た図」を上下に分ける。
    ae（径方向）と ap（軸方向）は向きが直交しているので、1枚に描くと
