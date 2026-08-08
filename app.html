@@ -412,6 +412,8 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
   background:none;border:1px solid var(--line);border-radius:8px;padding:4px 9px;min-height:32px;}
 .bd-acts button:active{transform:scale(.96);}
 .bd-acts button.done{color:var(--ok);border-color:var(--ok);}
+/* 取り返しがつかない操作なので、通報とは色で区別する */
+.bd-acts button.bd-del{color:var(--ng);border-color:rgba(248,113,113,.4);}
 /* いいね。押した状態がひと目で分かるよう塗りを変える */
 .bd-like{display:flex;align-items:center;gap:5px;min-width:56px;justify-content:center;}
 .bd-like.on{color:var(--accent);border-color:var(--accent);background:rgba(79,195,247,.12);}
@@ -1286,8 +1288,9 @@ body.adsense-on #adInline{display:block;}
 
   <div class="card">
     <p class="note">投稿は公開されます。<b>氏名・電話番号・勤務先など、知られたくない情報は書かないでください。</b><br>
-    宣伝目的の投稿やURLを含む投稿は、確認するまで表示されません。不適切な投稿は「通報」から知らせてください。一定数集まると自動で非表示になります。<br>
-    投稿の削除を希望される場合は、免責画面のお問い合わせ先までご連絡ください。</p>
+    <b>自分が書いた投稿には「削除」ボタンが出ます。</b>アカウントを使わない代わりに端末で見分けているので、<b>ブラウザの閲覧データを消すと自分の投稿でも消せなくなります</b>（そのときは下記の連絡先へご相談ください）。<br>
+    宣伝目的の投稿やURLを含む投稿は、確認するまで表示されません。不適切な投稿は「通報」から知らせてください。<b>3件集まると自動で非表示</b>になります。<br>
+    どうしても消せない投稿は、免責画面のお問い合わせ先までご連絡ください。</p>
   </div>
 
 </main>
@@ -5232,7 +5235,10 @@ function bdRender(){
           ' aria-pressed="'+(p.liked?"true":"false")+'">'+
           '👍<span class="n">'+n+'</span></button>'+
         '<button data-reply="'+esc(p.id)+'">返信する</button>'+
-        '<button data-report="'+esc(p.id)+'">通報</button>'+
+        // 自分が書いたものだけ消せる。他人の投稿には通報しか出さない
+        (p.mine
+          ? '<button class="bd-del" data-del="'+esc(p.id)+'">削除</button>'
+          : '<button data-report="'+esc(p.id)+'">通報</button>')+
       '</div></div>';
   };
   roots.forEach(p=>{
@@ -5244,6 +5250,33 @@ function bdRender(){
   box.querySelectorAll("[data-like]").forEach(b=>b.onclick=()=>bdLike(b.dataset.like,b));
   box.querySelectorAll("[data-reply]").forEach(b=>b.onclick=()=>bdStartReply(b.dataset.reply));
   box.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>bdReport(b.dataset.report,b));
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>bdDelete(b.dataset.del,b));
+}
+
+/* 自分の投稿を消す。アカウントが無いので、投稿時に記録した端末IDで本人か判定する。
+   ★ ブラウザの閲覧データを消すと端末IDが変わり、本人でも消せなくなる。
+     取り返しがつかないので、確認のときにその点も伝える。 */
+async function bdDelete(id,btn){
+  if(!BOARD.url||btn.disabled)return;
+  const p=bdPosts.find(x=>x.id===id);
+  const head=p?"「"+p.body.slice(0,24)+(p.body.length>24?"…":"")+"」\n\n":"";
+  if(!window.confirm(head+"この投稿を削除しますか？\n元に戻せません。"))return;
+  btn.disabled=true;
+  const label=btn.textContent;btn.textContent="削除中…";
+  try{
+    const r=await fetch(BOARD.url,{
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"delete",id:id,client:bdClientId()})
+    });
+    const j=await r.json();
+    if(!j.ok)throw new Error(j.error||"削除できませんでした");
+    bdSay("削除しました。","ok");
+    await bdLoad(true);
+  }catch(e){
+    bdSay(e.message||"削除できませんでした。通信環境を確認してください。","ng");
+    btn.textContent=label;btn.disabled=false;
+  }
 }
 
 /* いいね。1端末につき1件で、もう一度押すと取り消せる。
