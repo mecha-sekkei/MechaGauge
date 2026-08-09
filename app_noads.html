@@ -416,7 +416,34 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
 .bd-msg.on{display:block;}
 .bd-msg.ok{color:var(--ok);border:1px solid var(--ok);background:rgba(52,211,153,.1);}
 .bd-msg.ng{color:var(--ng);border:1px solid var(--ng);background:rgba(248,113,113,.1);}
+/* 一覧の上の操作列。並べ替え・更新・書き込みへの近道 */
+.bd-bar{display:flex;align-items:center;gap:8px;}
+.bd-bar .seg{flex:1;min-width:0;margin:0;}
+.bd-bar .chip{flex:0 0 auto;min-height:44px;}
+.bd-icon{width:44px;padding:0;display:grid;place-items:center;}
+.bd-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round;}
+.bd-write{font-weight:800;color:var(--accent);border-color:var(--accent);
+  background:rgba(79,195,247,.10);}
+
+/* 注意書き。ふだんは閉じておき、読みたい人だけ開く */
+.bd-help{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:0 12px;margin-bottom:10px;}
+.bd-help > summary{list-style:none;cursor:pointer;padding:13px 0;font-size:.8rem;
+  font-weight:700;color:var(--ink-dim);display:flex;align-items:center;gap:8px;}
+.bd-help > summary::-webkit-details-marker{display:none;}
+.bd-help > summary::before{content:"▶";font-size:.62rem;transition:transform .15s;}
+.bd-help[open] > summary::before{transform:rotate(90deg);}
+.bd-help .note{margin:0 0 9px;}
+.bd-help[open]{padding-bottom:4px;}
+
 .bd-list{display:flex;flex-direction:column;gap:10px;}
+/* 返信のたたみ込み。一覧を読みやすく保つため、既定では閉じておく */
+.bd-thread{border:none;padding:0;margin:0;}
+.bd-more{font:inherit;font-size:.72rem;font-weight:700;color:var(--accent);
+  background:none;border:1px dashed rgba(79,195,247,.4);border-radius:9px;
+  padding:7px 11px;margin-left:18px;min-height:38px;text-align:left;}
+.bd-more:active{transform:scale(.97);}
 /* 初回だけ中身が無いので、投稿カードの形をした骨組みを出す。
    「読み込み中…」の文字より、形が先に出たほうが速く感じる。 */
 .bd-skel{height:92px;border-radius:13px;background:var(--panel2);border:1px solid var(--line);
@@ -1292,45 +1319,48 @@ body.adsense-on #adInline{display:block;}
      へ送られる。計算値は一切送らない。免責画面のポリシーとあわせて明記している。 -->
 <main class="screen" id="screen-board">
 
+  <!-- 読む人のほうが多いので、投稿一覧を主役にして最上部に置く。
+       書き込む欄と注意書きは下へ。説明で画面を埋めない。 -->
   <div class="card">
-    <h2>みんなの声・要望</h2>
-    <p class="bd-note">現場で使ってみて気づいたこと、ほしい機能、計算がおかしいと思った点などを書いてください。
-    <b>アカウント登録は要りません。名前は空でも投稿できます（「名無し」になります）。</b><br>
-    ここに書いた内容だけが作者へ送られます。<b>各計算画面に入力した寸法や材質は一切送信されません。</b></p>
+    <div class="bd-bar">
+      <div class="seg sm" id="bdSort">
+        <button data-s="new" class="on">新着順</button>
+        <button data-s="like">いいね順</button>
+      </div>
+      <button class="chip bd-icon" id="bdReload" aria-label="更新" title="更新">
+        <svg viewBox="0 0 24 24"><path d="M20.4 12a8.4 8.4 0 1 1-2.6-6.1"/><path d="M20.6 4.2v4.2h-4.2"/></svg>
+      </button>
+      <button class="chip bd-write" id="bdJump">✏️ 書き込む</button>
+    </div>
+    <div class="bd-list" id="bdList" style="margin-top:10px"></div>
+  </div>
 
+  <div class="card" id="bdFormCard">
+    <h2>書き込む</h2>
     <div class="bd-replying" id="bdReplying">
       <span id="bdReplyTo"></span><button id="bdReplyCancel">返信をやめる</button>
     </div>
-
-    <div class="f-grid">
+    <textarea class="bd-ta" id="bdBody" maxlength="400" placeholder="例）重量計算に六角パイプも入れてほしい／切削条件のfzの目安がステンレスだと高い気がする"></textarea>
+    <div class="bd-count" id="bdCount">0 / 400</div>
+    <div class="f-grid" style="margin-top:8px">
       <div class="f-row f-full"><span class="lab">お名前（任意）<span class="why">空欄なら「名無し」で投稿されます</span></span>
         <div class="ipt"><input id="bdName" class="num" type="text" maxlength="20" placeholder="名無し"></div></div>
     </div>
-    <textarea class="bd-ta" id="bdBody" maxlength="400" placeholder="例）重量計算に六角パイプも入れてほしい／切削条件のfzの目安がステンレスだと高い気がする" style="margin-top:8px"></textarea>
-    <div class="bd-count" id="bdCount">0 / 400</div>
     <button class="copy-btn" id="bdSend">送信する</button>
     <div class="bd-msg" id="bdMsg"></div>
   </div>
 
-  <div class="card">
-    <div class="dia-head" style="display:flex;align-items:center;justify-content:space-between">
-      <h2 style="margin:0">投稿一覧</h2>
-      <button class="chip" id="bdReload">🔄 更新</button>
-    </div>
-    <div class="seg sm" id="bdSort" style="margin-top:8px">
-      <button data-s="new" class="on">新着順</button>
-      <button data-s="like">いいね順</button>
-    </div>
-    <p class="note" style="margin-top:6px">同じ要望に <b>👍</b> を押すと、どれを先に作ってほしいかが伝わります。<b>1台につき1回まで</b>で、もう一度押せば取り消せます。自分の投稿にも押せます。</p>
-    <div class="bd-list" id="bdList" style="margin-top:10px"></div>
-  </div>
-
-  <div class="card">
-    <p class="note">投稿は公開されます。<b>氏名・電話番号・勤務先など、知られたくない情報は書かないでください。</b><br>
-    <b>自分が書いた投稿には「削除」ボタンが出ます。</b>アカウントを使わない代わりに端末で見分けているので、<b>ブラウザの閲覧データを消すと自分の投稿でも消せなくなります</b>（そのときは下記の連絡先へご相談ください）。<br>
-    宣伝目的の投稿やURLを含む投稿は、確認するまで表示されません。不適切な投稿は「通報」から知らせてください。<b>3件集まると自動で非表示</b>になります。<br>
+  <!-- 注意書きは最後にまとめる。ふだんは閉じておき、読みたい人だけ開く -->
+  <details class="bd-help">
+    <summary>投稿について（アカウント・送信される内容・削除）</summary>
+    <p class="note"><b>アカウント登録は要りません。</b>名前は空でも投稿できます（「名無し」になります）。</p>
+    <p class="note"><b>送られるのは、ここに書いた本文と名前だけです。</b>各計算画面に入力した寸法・材質・計算結果は一切送信されません。</p>
+    <p class="note">投稿は公開されます。<b>氏名・電話番号・勤務先など、知られたくない情報は書かないでください。</b></p>
+    <p class="note"><b>👍</b> は1台につき1回まで。もう一度押せば取り消せます。自分の投稿にも押せます。</p>
+    <p class="note"><b>自分が書いた投稿には「削除」が出ます。</b>アカウントを使わない代わりに端末で見分けているので、<b>ブラウザの閲覧データを消すと自分の投稿でも消せなくなります</b>。</p>
+    <p class="note">宣伝目的の投稿やURLを含む投稿は、確認するまで表示されません。不適切な投稿は「通報」から知らせてください。<b>3件集まると自動で非表示</b>になります。<br>
     どうしても消せない投稿は、免責画面のお問い合わせ先までご連絡ください。</p>
-  </div>
+  </details>
 
 </main>
 
@@ -5185,6 +5215,8 @@ const BOARD = {
   maxBody: 400
 };
 let bdPosts=[], bdLoaded=false, bdReplyTo="", bdBusy=false, bdSort="new";
+// 開いているスレッド。描き直しても閉じないよう覚えておく
+const bdOpenThreads=new Set();
 // 掲示板を開く直前に見ていた計算画面。どの機能への要望かを添えるために覚えておく
 let curScreenBefore="general";
 
@@ -5330,11 +5362,27 @@ function bdRender(){
           : '<button data-report="'+esc(p.id)+'">通報</button>')+
       '</div></div>';
   };
+  /* スレッド方式。返信は既定でたたんでおき、件数だけ出す。
+     一覧を読みやすく保つのが目的なので、開いた状態は覚えておいて
+     いいねなどで描き直しても閉じないようにする。 */
   roots.forEach(p=>{
     html+=card(p,false);
-    (kids.get(p.id)||[]).forEach(r=>{html+=card(r,true);});
+    const rs=kids.get(p.id)||[];
+    if(!rs.length)return;
+    const open=bdOpenThreads.has(p.id);
+    if(open){
+      rs.forEach(r=>{html+=card(r,true);});
+      html+='<button class="bd-more" data-thread="'+esc(p.id)+'">▲ 返信を閉じる</button>';
+    }else{
+      html+='<button class="bd-more" data-thread="'+esc(p.id)+'">💬 返信 '+rs.length+'件を見る</button>';
+    }
   });
   box.innerHTML=html;
+  box.querySelectorAll("[data-thread]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.thread;
+    if(bdOpenThreads.has(id))bdOpenThreads.delete(id);else bdOpenThreads.add(id);
+    bdRender();
+  });
 
   box.querySelectorAll("[data-like]").forEach(b=>b.onclick=()=>bdLike(b.dataset.like,b));
   box.querySelectorAll("[data-reply]").forEach(b=>b.onclick=()=>bdStartReply(b.dataset.reply));
@@ -5422,14 +5470,19 @@ async function bdFlushLike(id,btn){
   if(q.want!==q.server)bdFlushLike(id,btn);   // 送信中にまた押されていたら追いかける
 }
 
+/* 書き込む欄は一覧の下にあるので、返信・書き込みのときはそこまで運ぶ。
+   スマホだとキーボードが出て位置が動くため、先にスクロールしてから焦点を当てる。 */
+function bdToForm(){
+  $("#bdFormCard").scrollIntoView({block:"start",behavior:"smooth"});
+  setTimeout(()=>$("#bdBody").focus({preventScroll:true}),260);
+}
 function bdStartReply(id){
   const p=bdPosts.find(x=>x.id===id);
   if(!p)return;
   bdReplyTo=id;
   $("#bdReplyTo").textContent="↩ "+(p.name||"名無し")+"さんへの返信";
   $("#bdReplying").className="bd-replying on";
-  $("#bdBody").focus();
-  $("#bdReplying").scrollIntoView({block:"center",behavior:"smooth"});
+  bdToForm();
 }
 function bdCancelReply(){
   bdReplyTo="";
@@ -5504,6 +5557,7 @@ function initBoard(){
   $("#bdBody").addEventListener("input",bdCount);
   $("#bdSend").onclick=bdSend;
   $("#bdReload").onclick=()=>bdLoad(true);
+  $("#bdJump").onclick=()=>{bdCancelReply();bdToForm();};
   $("#bdReplyCancel").onclick=bdCancelReply;
   $("#bdSort").querySelectorAll("button").forEach(b=>{
     b.onclick=()=>{
