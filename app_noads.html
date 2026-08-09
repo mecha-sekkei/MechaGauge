@@ -416,8 +416,11 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
 .bd-msg.on{display:block;}
 .bd-msg.ok{color:var(--ok);border:1px solid var(--ok);background:rgba(52,211,153,.1);}
 .bd-msg.ng{color:var(--ng);border:1px solid var(--ng);background:rgba(248,113,113,.1);}
-/* 一覧の上の操作列。並べ替え・更新・書き込みへの近道 */
-.bd-bar{display:flex;align-items:center;gap:8px;}
+/* 一覧の上の操作列。スクロールしても残るので、何件たまっても書き込める。
+   ヘッダーの高さは端末で変わるため、実測値を --hd-h に入れて使う */
+.bd-bar{display:flex;align-items:center;gap:8px;
+  position:sticky;top:calc(var(--hd-h,56px) - 1px);z-index:6;
+  background:var(--panel);padding:8px 0;margin-top:-8px;}
 .bd-bar .seg{flex:1;min-width:0;margin:0;}
 .bd-bar .chip{flex:0 0 auto;min-height:44px;}
 .bd-icon{width:44px;padding:0;display:grid;place-items:center;}
@@ -425,6 +428,21 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
   stroke-linecap:round;stroke-linejoin:round;}
 .bd-write{font-weight:800;color:var(--accent);border-color:var(--accent);
   background:rgba(79,195,247,.10);}
+.bd-write[aria-expanded="true"]{background:var(--accent);color:#06121A;}
+
+/* 開いたときだけ出る書き込み欄 */
+.bd-form{border:1px solid var(--accent);border-radius:14px;padding:12px;margin-top:10px;
+  background:rgba(79,195,247,.05);}
+.bd-form[hidden]{display:none;}
+.bd-formact{display:flex;gap:8px;}
+.bd-formact .copy-btn{flex:1;}
+.bd-close{flex:0 0 96px !important;color:var(--ink-dim);}
+
+/* もっと読む。全部を一度に描くと重いので少しずつ足す */
+.bd-page{width:100%;min-height:50px;border-radius:13px;font:inherit;font-size:.82rem;
+  font-weight:700;color:var(--ink-dim);background:var(--panel2);border:1px solid var(--line);
+  margin-top:2px;}
+.bd-page:active{transform:scale(.99);}
 
 /* 注意書き。ふだんは閉じておき、読みたい人だけ開く */
 .bd-help{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
@@ -1322,6 +1340,7 @@ body.adsense-on #adInline{display:block;}
   <!-- 読む人のほうが多いので、投稿一覧を主役にして最上部に置く。
        書き込む欄と注意書きは下へ。説明で画面を埋めない。 -->
   <div class="card">
+    <!-- 操作列はスクロールしても残す。何件たまっても「書き込む」に手が届くようにするため -->
     <div class="bd-bar">
       <div class="seg sm" id="bdSort">
         <button data-s="new" class="on">新着順</button>
@@ -1330,25 +1349,30 @@ body.adsense-on #adInline{display:block;}
       <button class="chip bd-icon" id="bdReload" aria-label="更新" title="更新">
         <svg viewBox="0 0 24 24"><path d="M20.4 12a8.4 8.4 0 1 1-2.6-6.1"/><path d="M20.6 4.2v4.2h-4.2"/></svg>
       </button>
-      <button class="chip bd-write" id="bdJump">✏️ 書き込む</button>
+      <button class="chip bd-write" id="bdJump" aria-expanded="false">✏️ 書き込む</button>
     </div>
-    <div class="bd-list" id="bdList" style="margin-top:10px"></div>
-  </div>
 
-  <div class="card" id="bdFormCard">
-    <h2>書き込む</h2>
-    <div class="bd-replying" id="bdReplying">
-      <span id="bdReplyTo"></span><button id="bdReplyCancel">返信をやめる</button>
+    <!-- 書き込む欄はふだん畳んでおく。読む人の邪魔をせず、
+         書きたくなったらその場で開く（一覧を何件スクロールしても関係ない） -->
+    <div class="bd-form" id="bdFormCard" hidden>
+      <div class="bd-replying" id="bdReplying">
+        <span id="bdReplyTo"></span><button id="bdReplyCancel">返信をやめる</button>
+      </div>
+      <!-- 薄い文字で出るので「例）」と断らなくても入力例だと分かる -->
+      <textarea class="bd-ta" id="bdBody" maxlength="400" placeholder="重量計算に六角パイプも入れてほしい／切削条件のfzの目安がステンレスだと高い気がする"></textarea>
+      <div class="bd-count" id="bdCount">0 / 400</div>
+      <div class="f-grid" style="margin-top:8px">
+        <div class="f-row f-full"><span class="lab">お名前（任意）<span class="why">空欄なら「名無し」で投稿されます</span></span>
+          <div class="ipt"><input id="bdName" class="num" type="text" maxlength="20" placeholder="名無し"></div></div>
+      </div>
+      <div class="bd-formact">
+        <button class="copy-btn" id="bdSend">送信する</button>
+        <button class="copy-btn bd-close" id="bdFormClose">閉じる</button>
+      </div>
+      <div class="bd-msg" id="bdMsg"></div>
     </div>
-    <!-- 薄い文字で出るので「例）」と断らなくても入力例だと分かる -->
-    <textarea class="bd-ta" id="bdBody" maxlength="400" placeholder="重量計算に六角パイプも入れてほしい／切削条件のfzの目安がステンレスだと高い気がする"></textarea>
-    <div class="bd-count" id="bdCount">0 / 400</div>
-    <div class="f-grid" style="margin-top:8px">
-      <div class="f-row f-full"><span class="lab">お名前（任意）<span class="why">空欄なら「名無し」で投稿されます</span></span>
-        <div class="ipt"><input id="bdName" class="num" type="text" maxlength="20" placeholder="名無し"></div></div>
-    </div>
-    <button class="copy-btn" id="bdSend">送信する</button>
-    <div class="bd-msg" id="bdMsg"></div>
+
+    <div class="bd-list" id="bdList" style="margin-top:10px"></div>
   </div>
 
   <!-- 注意書きは最後にまとめる。ふだんは閉じておき、読みたい人だけ開く -->
@@ -5218,6 +5242,10 @@ const BOARD = {
 let bdPosts=[], bdLoaded=false, bdReplyTo="", bdBusy=false, bdSort="new";
 // 開いているスレッド。描き直しても閉じないよう覚えておく
 const bdOpenThreads=new Set();
+/* 一度に描くスレッド数。全部並べると、200件で画面50個分になり
+   描画も重く、書き込み欄も遠くなる。少しずつ足す。 */
+const BD_PAGE=20;
+let bdShow=BD_PAGE;
 // 掲示板を開く直前に見ていた計算画面。どの機能への要望かを添えるために覚えておく
 let curScreenBefore="general";
 
@@ -5366,7 +5394,8 @@ function bdRender(){
   /* スレッド方式。返信は既定でたたんでおき、件数だけ出す。
      一覧を読みやすく保つのが目的なので、開いた状態は覚えておいて
      いいねなどで描き直しても閉じないようにする。 */
-  roots.forEach(p=>{
+  const pageRoots=roots.slice(0,bdShow);
+  pageRoots.forEach(p=>{
     html+=card(p,false);
     const rs=kids.get(p.id)||[];
     if(!rs.length)return;
@@ -5378,12 +5407,21 @@ function bdRender(){
       html+='<button class="bd-more" data-thread="'+esc(p.id)+'">💬 返信 '+rs.length+'件を見る</button>';
     }
   });
+  const rest=roots.length-pageRoots.length;
+  if(rest>0)html+='<button class="bd-page" data-page>さらに表示（残り '+rest+' 件）</button>';
   box.innerHTML=html;
   box.querySelectorAll("[data-thread]").forEach(b=>b.onclick=()=>{
     const id=b.dataset.thread;
     if(bdOpenThreads.has(id))bdOpenThreads.delete(id);else bdOpenThreads.add(id);
     bdRender();
   });
+  // 押した位置を保ったまま増やす（先頭へ戻ると読んでいた場所を見失う）
+  const pb=box.querySelector("[data-page]");
+  if(pb)pb.onclick=()=>{
+    const y=window.scrollY;
+    bdShow+=BD_PAGE;bdRender();
+    window.scrollTo({top:y,behavior:"instant"});
+  };
 
   box.querySelectorAll("[data-like]").forEach(b=>b.onclick=()=>bdLike(b.dataset.like,b));
   box.querySelectorAll("[data-reply]").forEach(b=>b.onclick=()=>bdStartReply(b.dataset.reply));
@@ -5471,11 +5509,21 @@ async function bdFlushLike(id,btn){
   if(q.want!==q.server)bdFlushLike(id,btn);   // 送信中にまた押されていたら追いかける
 }
 
-/* 書き込む欄は一覧の下にあるので、返信・書き込みのときはそこまで運ぶ。
-   スマホだとキーボードが出て位置が動くため、先にスクロールしてから焦点を当てる。 */
-function bdToForm(){
-  $("#bdFormCard").scrollIntoView({block:"start",behavior:"smooth"});
-  setTimeout(()=>$("#bdBody").focus({preventScroll:true}),260);
+/* 書き込む欄はふだん畳んである。開くのは操作列の真下なので、
+   一覧が何件あってもスクロールせずに書ける。 */
+function bdFormOpen(open){
+  const f=$("#bdFormCard"),b=$("#bdJump");
+  f.hidden=!open;
+  b.setAttribute("aria-expanded",open?"true":"false");
+  b.textContent=open?"✕ 書き込みを閉じる":"✏️ 書き込む";
+  if(open){
+    // 操作列が固定なので、その下に欄が見えるところまで寄せる
+    f.scrollIntoView({block:"nearest",behavior:"smooth"});
+    setTimeout(()=>$("#bdBody").focus({preventScroll:true}),240);
+  }else{
+    bdCancelReply();
+    $("#bdMsg").className="bd-msg";
+  }
 }
 function bdStartReply(id){
   const p=bdPosts.find(x=>x.id===id);
@@ -5483,7 +5531,7 @@ function bdStartReply(id){
   bdReplyTo=id;
   $("#bdReplyTo").textContent="↩ "+(p.name||"名無し")+"さんへの返信";
   $("#bdReplying").className="bd-replying on";
-  bdToForm();
+  bdFormOpen(true);
 }
 function bdCancelReply(){
   bdReplyTo="";
@@ -5522,6 +5570,12 @@ async function bdSend(){
       bdSay("送信しました。ありがとうございます。","ok");
     }
     await bdLoad(true);
+    // 送ったら欄を畳んで一覧に戻す。書いたものがすぐ見えるほうが気持ちがいい
+    setTimeout(()=>{
+      $("#bdFormCard").hidden=true;
+      $("#bdJump").setAttribute("aria-expanded","false");
+      $("#bdJump").textContent="✏️ 書き込む";
+    },900);
   }catch(e){
     bdSay("送信できませんでした。通信環境を確認してもう一度お試しください。","ng");
   }finally{
@@ -5558,8 +5612,19 @@ function initBoard(){
   $("#bdBody").addEventListener("input",bdCount);
   $("#bdSend").onclick=bdSend;
   $("#bdReload").onclick=()=>bdLoad(true);
-  $("#bdJump").onclick=()=>{bdCancelReply();bdToForm();};
+  $("#bdJump").onclick=()=>{
+    const open=$("#bdFormCard").hidden;
+    if(open)bdCancelReply();
+    bdFormOpen(open);
+  };
+  $("#bdFormClose").onclick=()=>bdFormOpen(false);
   $("#bdReplyCancel").onclick=bdCancelReply;
+  /* 固定した操作列がヘッダーに潜らないよう、実測の高さを渡す */
+  const setHd=()=>document.documentElement.style.setProperty("--hd-h",
+    Math.round(document.querySelector("header").getBoundingClientRect().height)+"px");
+  setHd();
+  window.addEventListener("resize",setHd);
+  window.addEventListener("orientationchange",()=>setTimeout(setHd,200));
   $("#bdSort").querySelectorAll("button").forEach(b=>{
     b.onclick=()=>{
       bdSort=b.dataset.s;
