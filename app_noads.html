@@ -422,7 +422,9 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
   position:sticky;top:calc(var(--hd-h,56px) - 1px);z-index:6;
   background:var(--panel);padding:8px 0;margin-top:-8px;}
 .bd-bar .seg{flex:1;min-width:0;margin:0;}
-.bd-bar .chip{flex:0 0 auto;min-height:44px;}
+/* 開閉でラベルが変わっても並べ替えが潰れないよう、幅を固定しておく */
+.bd-bar .chip{flex:0 0 auto;min-height:44px;white-space:nowrap;}
+.bd-bar .bd-write{width:112px;padding:0;}
 .bd-icon{width:44px;padding:0;display:grid;place-items:center;}
 .bd-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;
   stroke-linecap:round;stroke-linejoin:round;}
@@ -1362,6 +1364,8 @@ body.adsense-on #adInline{display:block;}
       <textarea class="bd-ta" id="bdBody" maxlength="400" placeholder="重量計算に六角パイプも入れてほしい／切削条件のfzの目安がステンレスだと高い気がする"></textarea>
       <div class="bd-count" id="bdCount">0 / 400</div>
       <div class="f-grid" style="margin-top:8px">
+        <div class="f-row f-full"><span class="lab">関連する機能<span class="why">投稿にタグとして付きます。直前に見ていた機能が既に選ばれています</span></span>
+          <select class="sel num" id="bdScreen" style="margin-top:4px"></select></div>
         <div class="f-row f-full"><span class="lab">お名前（任意）<span class="why">空欄なら「名無し」で投稿されます</span></span>
           <div class="ipt"><input id="bdName" class="num" type="text" maxlength="20" placeholder="名無し"></div></div>
       </div>
@@ -4832,8 +4836,10 @@ function buildMenu(){
 }
 
 function showScreen(id){
-  // どの機能を見ていて要望を書いたのかを掲示板に添えるため、直前の計算画面を覚えておく
-  if(id==="board"&&SCREENS.some(s=>s.id===curScreen))curScreenBefore=curScreen;
+  /* どの機能について書かれた要望かを掲示板に添えるため、最後に見た計算画面を覚えておく。
+     以前は「計算画面から直接、掲示板を開いたとき」しか記録しておらず、
+     あいだにホームを挟むとタグが付かなかった。開いた時点で常に控える。 */
+  if(SCREENS.some(s=>s.id===id))curScreenBefore=id;
   // 使った順にトップへ並べ替えるので、開いた時刻を控える
   homeTouch(id);
   if(id==="home")renderHome();
@@ -5515,8 +5521,11 @@ function bdFormOpen(open){
   const f=$("#bdFormCard"),b=$("#bdJump");
   f.hidden=!open;
   b.setAttribute("aria-expanded",open?"true":"false");
-  b.textContent=open?"✕ 書き込みを閉じる":"✏️ 書き込む";
+  b.textContent=open?"✕ 閉じる":"✏️ 書き込む";
   if(open){
+    // 直前に見ていた機能を初期選択にしておく（そのまま送れば自動で付く）
+    const sel=$("#bdScreen");
+    if(sel&&!bdReplyTo)sel.value=SCREENS.some(s=>s.id===curScreenBefore)?curScreenBefore:"";
     // 操作列が固定なので、その下に欄が見えるところまで寄せる
     f.scrollIntoView({block:"nearest",behavior:"smooth"});
     setTimeout(()=>$("#bdBody").focus({preventScroll:true}),240);
@@ -5557,7 +5566,8 @@ async function bdSend(){
       headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify({
         action:"post", body:body, name:name,
-        screen:bdReplyTo?"":curScreenBefore||"general",
+        // 返信は親のタグを引き継ぐので付けない
+        screen:bdReplyTo?"":($("#bdScreen").value||"general"),
         replyTo:bdReplyTo, client:bdClientId()
       })
     });
@@ -5609,6 +5619,9 @@ function bdCount(){
 }
 
 function initBoard(){
+  // 関連する機能の選択肢。「なし」＋8機能
+  $("#bdScreen").innerHTML='<option value="">なし（全体への意見）</option>'+
+    SCREENS.map(s=>'<option value="'+s.id+'">'+esc(s.name)+"</option>").join("");
   $("#bdBody").addEventListener("input",bdCount);
   $("#bdSend").onclick=bdSend;
   $("#bdReload").onclick=()=>bdLoad(true);
