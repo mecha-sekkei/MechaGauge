@@ -528,7 +528,8 @@ body.adsense-on #adInline{display:block;}
   <div class="hm-in">
     <div id="homeLast"></div>
     <div class="hm-grid" id="homeGrid"></div>
-    <button class="hm-voice hm-cut" id="homeVoice">
+    <!-- data-go を付けないと renderHome のクリック割り当てから漏れて、押しても何も起きない -->
+    <button class="hm-voice hm-cut" id="homeVoice" data-go="board">
       <span class="ic" data-hic="board"></span>
       <span class="tx">
         <span class="nm">みんなの声・要望</span>
