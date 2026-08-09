@@ -36,17 +36,22 @@ body.no-banner{padding-bottom:calc(env(safe-area-inset-bottom) + 8px);}
 body.drawer-open{overflow:hidden;}
 .num{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;}
 
+/* ボタンが4つ並ぶので、幅と余白を詰めて iPhone SE でも収まるようにしている */
 header{position:sticky;top:0;z-index:20;background:rgba(14,17,22,.92);backdrop-filter:blur(14px);
-  padding:calc(6px + env(safe-area-inset-top)) 10px 6px;border-bottom:1px solid var(--line);
-  display:flex;align-items:center;gap:10px;}
-header .ttl{flex:1;min-width:0;text-align:center;}
-header h1{font-size:1.02rem;margin:0;line-height:1.2;}
-header .sub{display:block;color:var(--ink-dim);font-size:.68rem;
+  padding:calc(6px + env(safe-area-inset-top)) 8px 6px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:6px;}
+header .ttl{flex:1;min-width:0;text-align:center;padding:0 2px;}
+header h1{font-size:.98rem;margin:0;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:clip;}
+header .sub{display:block;color:var(--ink-dim);font-size:.66rem;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.hbtn{flex:0 0 auto;width:46px;height:46px;border-radius:13px;background:var(--panel2);
+.hbtn{flex:0 0 auto;width:42px;height:42px;border-radius:12px;background:var(--panel2);
   border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
-  font-size:1.2rem;color:var(--ink);transition:transform .06s;}
+  color:var(--ink);transition:transform .06s;padding:0;}
+.hbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;}
 .hbtn:active{transform:scale(.92);background:#242D38;}
+/* いま開いている引き出しのボタンを光らせて、どちらを見ているか分かるようにする */
+.hbtn.on{background:rgba(79,195,247,.16);border-color:var(--accent);color:var(--accent);}
 
 .screen{display:none;padding:10px 10px 16px;max-width:560px;margin:0 auto;}
 .screen.active{display:block;animation:fade .18s ease;}
@@ -372,7 +377,19 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .hm-cell .no{position:absolute;bottom:11px;right:11px;font-family:ui-monospace,Menlo,monospace;
   font-size:.56rem;color:var(--ink-dim);opacity:.55;}
-.hm-cell:active,.hm-last:active{transform:scale(.985);}
+/* 押した手応え。これが無いと「反応していない」と感じる（実際にそう言われた） */
+.hm-cell:active,.hm-last:active,.hm-voice:active{transform:scale(.985);background:var(--panel2);}
+
+/* iPhone SE のような狭い端末では6文字の名称が入りきらず「…」が出るので、
+   アイコンと文字を少しだけ詰めて、切らずに収める */
+@media (max-width:360px){
+  .hm-grid{gap:8px;}
+  .hm-cell{padding:12px 10px 11px;}
+  .hm-cell .ic{width:30px;height:30px;}
+  .hm-cell .top{gap:8px;}
+  .hm-cell .nm{font-size:.8rem;}
+  .hm-cell .sb{font-size:.57rem;padding-right:20px;}
+}
 
 /* 計算機能ではないので、グリッドと張り合わない見た目にする */
 .hm-voice{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;
@@ -399,6 +416,16 @@ select.sel{width:100%;min-height:48px;background:var(--panel2);border:1px solid 
 .bd-msg.ok{color:var(--ok);border:1px solid var(--ok);background:rgba(52,211,153,.1);}
 .bd-msg.ng{color:var(--ng);border:1px solid var(--ng);background:rgba(248,113,113,.1);}
 .bd-list{display:flex;flex-direction:column;gap:10px;}
+/* 初回だけ中身が無いので、投稿カードの形をした骨組みを出す。
+   「読み込み中…」の文字より、形が先に出たほうが速く感じる。 */
+.bd-skel{height:92px;border-radius:13px;background:var(--panel2);border:1px solid var(--line);
+  position:relative;overflow:hidden;}
+.bd-skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);
+  animation:bdshine 1.1s infinite;}
+@keyframes bdshine{100%{transform:translateX(100%);}}
+/* 控えを見せたまま裏で更新しているとき。操作は妨げない */
+.bd-list.refreshing{opacity:.72;transition:opacity .2s;}
 .bd-post{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:10px 12px;}
 .bd-post.reply{margin-left:18px;border-left:3px solid var(--accent);}
 .bd-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:5px;}
@@ -473,13 +500,23 @@ body.adsense-on #adInline{display:block;}
 </div>
 
 <header>
-  <button class="hbtn" id="btnMenu" aria-label="機能メニュー">☰</button>
-  <!-- タイトルを押すとトップへ戻る。ドロワーを開かずに戻れるようにしておく -->
-  <div class="ttl" id="btnHome" role="button" tabindex="0">
+  <!-- よく使う導線は絵文字をやめて線画に統一した。端末ごとの絵文字の差が出ないようにするため -->
+  <button class="hbtn" id="btnMenu" aria-label="機能メニュー" title="機能メニュー">
+    <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <button class="hbtn" id="btnHome" aria-label="ホーム" title="ホーム">
+    <svg viewBox="0 0 24 24"><path d="M3.6 10.4 12 3.4l8.4 7"/><path d="M5.6 9.2v10.4h12.8V9.2"/><path d="M9.8 19.6v-5.4h4.4v5.4"/></svg>
+  </button>
+  <div class="ttl">
     <h1>Mecha Gauge</h1>
     <span class="sub" id="hdSub">ホーム</span>
   </div>
-  <button class="hbtn" id="btnRef" aria-label="早見表・履歴">📖</button>
+  <button class="hbtn" id="btnRef" aria-label="早見表" title="早見表">
+    <svg viewBox="0 0 24 24"><path d="M3.6 4.6h16.8v14.8H3.6z"/><path d="M3.6 9.2h16.8M3.6 14.4h16.8M9.4 4.6v14.8"/></svg>
+  </button>
+  <button class="hbtn" id="btnHist" aria-label="計算履歴" title="計算履歴">
+    <svg viewBox="0 0 24 24"><path d="M3.6 12a8.4 8.4 0 1 0 2.6-6.1"/><path d="M3.4 4.2v4.2h4.2"/><path d="M12 7.4V12l3.4 2"/></svg>
+  </button>
 </header>
 
 <div class="edge-hint l"></div>
@@ -4629,7 +4666,7 @@ const INFO_SCREENS=[
   {id:"about", icon:"ⓘ", name:"使い方・単位について"},
   {id:"legal", icon:"⚖", name:"免責・規格の出典"}
 ];
-const HOME_SCREEN={id:"home", icon:"⌂", name:"ホーム", sub:"よく使う機能へ1タップで"};
+const HOME_SCREEN={id:"home", icon:"⌂", name:"ホーム"};
 const ALL_SCREENS=[HOME_SCREEN].concat(SCREENS,INFO_SCREENS);
 
 /* ---- トップ画面 ----
@@ -4760,6 +4797,7 @@ function showScreen(id){
   // 掲示板は開いたときだけ取りに行く。起動時に全員が通信するのを避けるため
   if(id==="board")bdLoad(false);
   renderRef();
+  syncHdBtns();
 }
 
 /* ---- ドロワー開閉 ---- */
@@ -4771,10 +4809,25 @@ function setDrawer(side){
   $("#scrim").classList.toggle("on",!!side);
   document.body.classList.toggle("drawer-open",!!side);
   if(side==="r")renderRef();
+  syncHdBtns();
+}
+/* いま何を開いているかをヘッダーのボタンで示す */
+function syncHdBtns(){
+  $("#btnMenu").classList.toggle("on",openSide==="l");
+  $("#btnRef").classList.toggle("on",openSide==="r"&&refMode==="ref");
+  $("#btnHist").classList.toggle("on",openSide==="r"&&refMode==="hist");
+  $("#btnHome").classList.toggle("on",curScreen==="home");
 }
 function closeDrawer(){setDrawer(null);}
+/* 早見表と履歴は同じ引き出しの中身違い。ボタンを分けて1タップで目的の方を開く */
+function openRef(mode){
+  if(openSide==="r"&&refMode===mode){setDrawer(null);return;}
+  refMode=mode;setDrawer("r");
+}
 $("#btnMenu").onclick=()=>setDrawer(openSide==="l"?null:"l");
-$("#btnRef").onclick=()=>setDrawer(openSide==="r"?null:"r");
+$("#btnHome").onclick=()=>showScreen("home");
+$("#btnRef").onclick=()=>openRef("ref");
+$("#btnHist").onclick=()=>openRef("hist");
 $("#scrim").onclick=closeDrawer;
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeDrawer);
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer();});
@@ -5078,7 +5131,7 @@ function renderRef(){
   }
 }
 $("#refSeg").querySelectorAll("button").forEach(b=>{
-  b.onclick=()=>{refMode=b.dataset.r;renderRef();};
+  b.onclick=()=>{refMode=b.dataset.r;renderRef();syncHdBtns();};
 });
 
 /* ========================================================= 広告 ========================================================= */
@@ -5162,14 +5215,39 @@ function bdScreenName(id){
   return s?s.name:"";
 }
 
+/* 前回の一覧を端末に控えておく。
+   開いた瞬間にまずこれを出し、そのうえで裏で最新を取りに行く。
+   Apps Script は応答に2〜4秒かかるので、毎回待たせると
+   「押したのに出ない」になる。2回目以降は待ち時間ゼロで出る。 */
+const BD_CACHE="mg_board_cache";
+function bdSaveCache(){
+  try{localStorage.setItem(BD_CACHE,JSON.stringify({t:Date.now(),posts:bdPosts}));}catch(e){}
+}
+function bdLoadCache(){
+  try{
+    const c=JSON.parse(localStorage.getItem(BD_CACHE)||"null");
+    if(c&&Array.isArray(c.posts)&&c.posts.length){bdPosts=c.posts;return true;}
+  }catch(e){}
+  return false;
+}
+let bdInflight=null;      // 取得中のPromise。二重に取りに行かないための控え
+
 async function bdLoad(force){
   const box=$("#bdList");
   if(!BOARD.url){
     box.innerHTML='<div class="empty">掲示板の接続先が未設定です。</div>';
     return;
   }
+  /* 出すものが無いあいだは、まず骨組みを置く。
+     先読みが始まる前に開かれると空白のままになるので、
+     取得を始めるかどうかに関係なく、ここで必ず形を出す。 */
+  if(!bdLoaded&&!bdPosts.length&&!box.querySelector(".bd-skel"))
+    box.innerHTML='<div class="bd-skel"></div>'.repeat(3);
   if(bdLoaded&&!force)return;
-  box.innerHTML='<div class="empty">読み込み中…</div>';
+  if(bdInflight)return bdInflight;        // 先読み中にタップされても待ちを増やさない
+  // 控えがあるならそれを見せたまま裏で更新する
+  if(bdPosts.length)box.classList.add("refreshing");
+  bdInflight=(async()=>{
   try{
     // client を添えると、この端末がいいね済みかどうかも返してくる
     const r=await fetch(BOARD.url+"?action=list&client="+encodeURIComponent(bdClientId()),{method:"GET"});
@@ -5177,14 +5255,23 @@ async function bdLoad(force){
     if(!j.ok)throw new Error(j.error||"取得に失敗しました");
     bdPosts=j.posts||[];
     bdLoaded=true;
+    bdSaveCache();
     // 取り直した内容が正なので、送信待ちの控えは捨てる（送信中のものだけ残す）
     Object.keys(bdLikeQ).forEach(k=>{if(!bdLikeQ[k].busy)delete bdLikeQ[k];});
     bdRender();
   }catch(e){
     // 計算機能はすべて端末内で動くので、ここが落ちてもアプリ自体は使える
-    box.innerHTML='<div class="empty">投稿を読み込めませんでした。<br>'+
-      '通信環境を確認して「🔄 更新」を押してください。</div>';
+    // 控えが出ているならそれを残す。消して「読めません」にすると後退して見える
+    if(!bdPosts.length){
+      box.innerHTML='<div class="empty">投稿を読み込めませんでした。<br>'+
+        '通信環境を確認して「🔄 更新」を押してください。</div>';
+    }
+  }finally{
+    box.classList.remove("refreshing");
+    bdInflight=null;
   }
+  })();
+  return bdInflight;
 }
 
 function bdRender(){
@@ -5481,16 +5568,19 @@ $("#wtSearch").value="";
 buildWeightUI();calcWeight();
 renderRef();
 initBoard();
-$("#btnHome").onclick=()=>showScreen("home");
-/* 掲示板は開いてから取りに行くと待たされるので、起動後に裏で先読みしておく。
-   計算機能の初期描画を邪魔しないよう、暇になってから・低い優先度で走らせる。
-   失敗しても何も出さない（開いたときに改めて案内が出る）。 */
+/* 掲示板を「押した瞬間に出る」ようにする。
+   1. 前回の一覧が端末に残っていれば、通信せずその場で描いておく（0秒）
+   2. そのうえで暇になってから最新を取りに行き、届いたら静かに差し替える
+   計算機能の初期描画を邪魔しないよう、低い優先度で走らせる。
+   失敗しても控えを消さないので、画面が後退して見えることはない。 */
 (function preloadBoard(){
+  if(bdLoadCache()){bdLoaded=true;bdRender();}
   if(!BOARD.url)return;
-  const go=()=>{ bdLoad(false).catch(()=>{}); };
-  if("requestIdleCallback" in window)requestIdleCallback(go,{timeout:3000});
-  else setTimeout(go,1200);
+  const go=()=>{ bdLoad(true).catch(()=>{}); };
+  if("requestIdleCallback" in window)requestIdleCallback(go,{timeout:2000});
+  else setTimeout(go,800);
 })();
+syncHdBtns();
 initDiaToggles();
 // 起動直後の初期描画で履歴が積まれないよう、保留中の1件だけ捨てる
 clearTimeout(histTimer);histPending=null;
