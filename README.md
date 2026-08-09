@@ -1,19 +1,19 @@
-# Mech Gauge（Webアプリ）
+# Mecha Gauge（Webアプリ）
 
 機械加工・検査の現場向け計算ツール。**インストール不要、ブラウザだけで動きます。**
 計算はすべてブラウザ内で完結し、入力した数値が外部に送信されることはありません。
 
-**公開URL:** https://mecha-sekkei.github.io/Mech-Gauge/
+**公開URL:** https://mecha-sekkei.github.io/MechaGauge/
 
 ## 2つの版
 
 | 版 | ファイル | 内容 |
 |---|---|---|
-| 広告あり（通常版） | [`app.html`](app.html) | 協賛企業のバナーと起動時広告を表示します。**こちらが正本です** |
-| 広告なし | [`app_noads.html`](app_noads.html) | 広告を出しません。機能・計算内容は通常版とまったく同じです |
+| 広告あり | [`app_adsense.html`](app_adsense.html) | Google AdSense の広告を表示します（自動生成物） |
+| 広告なし | [`app_noads.html`](app_noads.html) | 広告を出しません。**こちらが正本です** |
 
-> 広告なし版は非公開リポジトリの `build_variants.sh` が `app.html` から自動生成しています。
-> **手で編集しないでください**（内容がずれます）。修正は `app.html` に対して行い、再生成します。
+> 広告あり版は非公開リポジトリの `build_variants.sh` が `app_noads.html` から自動生成しています。
+> **手で編集しないでください**（内容がずれます）。修正は `app_noads.html` に対して行い、再生成します。
 
 ## 収録している8つの機能
 
@@ -36,18 +36,19 @@
 ## ファイル構成
 
 ```
-index.html           紹介ページ
-app.html             計算機本体（広告あり・正本）
-app_noads.html       計算機本体（広告なし・自動生成物）
-privacy_policy.html  プライバシーポリシー
-icons/               アイコン
-screenshots/         スクリーンショット
+index.html                   紹介ページ
+app_noads.html               計算機本体（広告なし・正本）
+app_adsense.html             計算機本体（広告あり・自動生成物）
+privacy_policy.html          プライバシーポリシー
+privacy_policy_adsense.html  プライバシーポリシー（広告配信版）
+icons/                       アイコン
+screenshots/                 スクリーンショット
 ```
 
 ## 開発の方針（2026-08-02〜）
 
 **現在はWeb版に一本化して開発しています。** iOSアプリ版は、Web版のテスト完了と
-広告掲載の許可が揃うまで保留です。`app.html` はこのリポジトリのものが正本で、
+広告掲載の許可が揃うまで保留です。`app_noads.html` がこのリポジトリの正本で、
 iOS側（非公開リポジトリ）は保留時点で止まっています。
 
 計算式は複数の資料および独立検算と照合しています（検証記録は非公開リポジトリの `verification.md`）。

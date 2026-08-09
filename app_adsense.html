@@ -1524,8 +1524,8 @@ body.adsense-on #adInline{display:block;}
 /* =========================================================
    ★ 広告設定 ★  ここを書き換えるだけで広告を管理できます
    - enabled を false にすると非表示
-   - ADS 配列に {name, tagline, url, img} を追加/削除
-   - img は各サイトの画像URL（読み込み失敗時は自動で文字のみ表示）
+   - 協賛バナーの掲載データ（社名・URL・画像）は非公開の sponsors.js にあります。
+     追加/削除はそちらで行い、./build_variants.sh --release で流し込んでください。
    ========================================================= */
 const AD_CONFIG = {
   splash: { enabled: false, seconds: 4 },       // オープニング広告（秒数後に自動で閉じる）
@@ -1549,20 +1549,11 @@ const ADSENSE = {
   inlineSlot: ""                       // 本文下に置く手動枠のスロットID（空なら置かない）
 };
 
-const ADS = [
-  { name: "協賛企業A",
-    tagline: "機械設計・部品加工・組立まで一貫対応",
-    url: "https://example.com/",
-    img: "https://example.com/images/banner1.jpg" },
-  { name: "協賛企業B",
-    tagline: "半導体製造装置部品・精密部品加工",
-    url: "https://example.com/",
-    img: "https://example.com/images/banner2.jpg" },
-  { name: "協賛企業C",
-    tagline: "精密・金属加工",
-    url: "https://example.com/",
-    img: "https://example.com/images/banner3.jpg" }
-];
+/* 協賛バナーの掲載データは、このリポジトリには置いていません。
+   実データは非公開リポジトリの sponsors.js にあり、
+   ./build_variants.sh --release が協賛版をビルドするときにだけ流し込みます。
+   ここが空配列のあいだ、スプラッシュもバナーも描画されません。 */
+const ADS = [];
 
 /* =========================================================
    ISO 286-1 / JIS B 0401 データ（参考値）
