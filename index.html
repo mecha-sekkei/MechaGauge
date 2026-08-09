@@ -23,12 +23,12 @@ body{background:var(--bg);color:var(--ink);
   box-shadow:0 12px 40px rgba(0,0,0,.6);}
 .hero h1{font-size:2.4rem;letter-spacing:.02em;margin-bottom:8px;}
 .hero .tag{color:var(--dim);font-size:1.02rem;margin-bottom:28px;}
-.dl{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:#0E1116;
-  font-weight:800;font-size:1.05rem;padding:16px 34px;border-radius:16px;text-decoration:none;
-  transition:transform .12s;}
+.dl{display:inline-flex;flex-direction:column;align-items:center;gap:4px;background:var(--ink);color:#0E1116;
+  font-weight:800;font-size:1.05rem;padding:15px 40px;border-radius:16px;text-decoration:none;
+  text-align:center;transition:transform .12s;}
 .dl:hover{transform:translateY(-2px);}
 .dl small{display:block;font-size:.68rem;font-weight:600;opacity:.6;line-height:1.2;}
-.dl.web{background:var(--hole);color:#06121A;margin-left:12px;}
+.dl.web{background:var(--hole);color:#06121A;}
 .dl.plain{background:transparent;color:var(--ink);border:1px solid var(--line);margin-left:12px;}
 .dl.plain small{opacity:.75;}
 .btnrow{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;}
@@ -83,13 +83,9 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
     <p class="tag">はめあい・ねじ・三角関数・強度計算・切削条件・梁のたわみ・タクトタイム・重量計算<br>機械加工と検査の現場で、必要な数値を最短で。</p>
     <p class="tag" style="font-size:.9em;opacity:.85">要望は「みんなの声」から。<b>👍</b> の数が多いものから作っていきます。</p>
     <div class="btnrow">
-      <a class="dl web" href="app_adsense.html">
+      <a class="dl web" href="app_noads.html">
         ブラウザで開く
-        <small>インストール不要・無料</small>
-      </a>
-      <a class="dl plain" href="app_noads.html">
-        広告なしで開く
-        <small>機能・計算内容は同じ</small>
+        <small>インストール不要・無料・広告なし</small>
       </a>
     </div>
     <p class="req">PC・スマホ・タブレットのブラウザで動作　—　計算はすべて端末内で完結（入力値は送信されません）<br>iPhoneアプリ版は準備中です</p>
@@ -242,11 +238,11 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
 <footer>
   <div class="wrap">
     <div class="links">
-      <a href="privacy_policy_adsense.html">プライバシーポリシー</a>
+      <a href="privacy_policy.html">プライバシーポリシー</a>
       <a href="mailto:mechagauge.app@gmail.com" id="contactLink">お問い合わせ</a>
     </div>
-    <p>「ブラウザで開く」版は Google AdSense の広告収入で運営しています。<br>
-    広告なし版と計算内容はまったく同じです。</p>
+    <p>広告は表示しません。計算はすべて端末内で完結し、<br>
+    入力した数値が外部に送信されることはありません。</p>
     <p style="margin-top:14px;">&copy; 2026 Mecha Gauge</p>
   </div>
 </footer>

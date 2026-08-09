@@ -5,15 +5,8 @@
 
 **公開URL:** https://mecha-sekkei.github.io/MechaGauge/
 
-## 2つの版
-
-| 版 | ファイル | 内容 |
-|---|---|---|
-| 広告あり | [`app_adsense.html`](app_adsense.html) | Google AdSense の広告を表示します（自動生成物） |
-| 広告なし | [`app_noads.html`](app_noads.html) | 広告を出しません。**こちらが正本です** |
-
-> 広告あり版は非公開リポジトリの `build_variants.sh` が `app_noads.html` から自動生成しています。
-> **手で編集しないでください**（内容がずれます）。修正は `app_noads.html` に対して行い、再生成します。
+**広告は表示しません。** 計算機の本体は [`app_noads.html`](app_noads.html) の1ファイルだけで、
+ビルドも依存ライブラリもありません。ダウンロードしてローカルで開いても動きます。
 
 ## 収録している8つの機能
 
@@ -36,13 +29,11 @@
 ## ファイル構成
 
 ```
-index.html                   紹介ページ
-app_noads.html               計算機本体（広告なし・正本）
-app_adsense.html             計算機本体（広告あり・自動生成物）
-privacy_policy.html          プライバシーポリシー
-privacy_policy_adsense.html  プライバシーポリシー（広告配信版）
-icons/                       アイコン
-screenshots/                 スクリーンショット
+index.html           紹介ページ
+app_noads.html       計算機本体
+privacy_policy.html  プライバシーポリシー
+icons/               アイコン
+screenshots/         スクリーンショット
 ```
 
 ## 開発の方針（2026-08-02〜）

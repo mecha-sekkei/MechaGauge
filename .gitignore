@@ -4,3 +4,5 @@
 # 協賛3社版は非公開側で管理する（社名・所在市名が公開リポジトリに出ないように）
 # 生成先: ../MechGauge/MechGauge/app.html
 app.html
+app_adsense.html
+privacy_policy_adsense.html
