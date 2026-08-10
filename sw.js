@@ -10,7 +10,7 @@
  * ★ ファイルを足したり中身を変えたら VERSION を上げること。
  *   上げ忘れると、利用者の端末に古い版が残り続ける。
  */
-const VERSION = "v1";
+const VERSION = "v2";   // v2: アイコンを iconv6（明るい背景＋鋼色の機械）に差し替え
 const CACHE = "mecha-gauge-" + VERSION;
 
 /* 端末に持たせておくもの。これだけで全機能がオフラインで動く */
@@ -20,10 +20,10 @@ const SHELL = [
   "./app_noads.html",
   "./privacy_policy.html",
   "./manifest.webmanifest",
+  "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
-  "./icons/icon-180.png",
-  "./icons/icon_B_stamp_1024.png"
+  "./icons/icon-1024.png"
 ];
 
 self.addEventListener("install", (e) => {
