@@ -23,8 +23,10 @@ body{background:var(--bg);color:var(--ink);
 /* hero */
 .hero{padding:72px 0 56px;text-align:center;
   background:radial-gradient(ellipse at 50% -10%,rgba(79,195,247,.14),transparent 60%);}
-.hero .icon{width:104px;height:104px;border-radius:23%;margin-bottom:20px;
-  box-shadow:0 12px 40px rgba(0,0,0,.6);}
+/* アイコンは丸（外側は透過）。角丸の板を敷くと四角く見えてしまうので敷かない。
+   影も円に沿わせる（box-shadow だと矩形の影が出る） */
+.hero .icon{width:112px;height:112px;margin-bottom:20px;
+  filter:drop-shadow(0 12px 34px rgba(0,0,0,.55));}
 .hero h1{font-size:2.4rem;letter-spacing:.02em;margin-bottom:8px;}
 .hero .tag{color:var(--dim);font-size:1.02rem;margin-bottom:28px;}
 .dl{display:inline-flex;flex-direction:column;align-items:center;gap:4px;background:var(--ink);color:#0E1116;
