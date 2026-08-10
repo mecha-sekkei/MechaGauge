@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mecha Gauge — はめあい・ねじ・強度・切削条件・重量計算｜機械加工の現場計算ツール</title>
 <meta name="description" content="はめあい判定・タップ下穴・締付トルク・切削条件・梁のたわみ・タクトタイム・材料の重量と比重を1つに。インストール不要、ブラウザだけで動く機械加工・検査のための計算ツール。">
+<meta name="theme-color" content="#0E1116">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>
 :root{
   --bg:#0E1116;--panel:#161C24;--panel2:#1C232D;--line:#28313D;
@@ -33,6 +37,17 @@ body{background:var(--bg);color:var(--ink);
 .dl.plain small{opacity:.75;}
 .btnrow{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;}
 .req{color:var(--dim);font-size:.8rem;margin-top:14px;}
+.a2hs{max-width:520px;margin:14px auto 0;text-align:left;background:var(--panel);
+  border:1px solid var(--line);border-radius:14px;font-size:.85rem;}
+.a2hs summary{cursor:pointer;padding:12px 16px;color:var(--ink);font-weight:700;
+  list-style:none;text-align:center;}
+.a2hs summary::-webkit-details-marker{display:none;}
+.a2hs summary::after{content:" ▾";color:var(--dim);}
+.a2hs[open] summary::after{content:" ▴";}
+.a2hs>div{padding:0 16px 14px;color:var(--dim);line-height:1.8;}
+.a2hs>div p{margin-bottom:10px;}
+.a2hs b{color:var(--ink);}
+.a2hs-note{font-size:.92em;opacity:.85;}
 @media(max-width:520px){.dl.web{margin-left:0;}}
 
 /* sections */
@@ -88,7 +103,18 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
         <small>インストール不要・無料・広告なし</small>
       </a>
     </div>
-    <p class="req">PC・スマホ・タブレットのブラウザで動作　—　計算はすべて端末内で完結（入力値は送信されません）<br>iPhoneアプリ版は準備中です</p>
+    <p class="req">PC・スマホ・タブレットのブラウザで動作　—　計算はすべて端末内で完結（入力値は送信されません）<br><b>ホーム画面に追加すると、アプリと同じように使えます</b>（圏外の工場でも動きます）</p>
+    <details class="a2hs">
+      <summary>ホーム画面への追加のしかた</summary>
+      <div>
+        <p><b>iPhone・iPad（Safari）</b><br>
+        下の <b>共有ボタン</b>（□に↑）→ <b>「ホーム画面に追加」</b> → 右上の「追加」</p>
+        <p><b>Android（Chrome）</b><br>
+        右上の <b>⋮</b> → <b>「ホーム画面に追加」</b>（または画面下に出る案内をタップ）</p>
+        <p class="a2hs-note">追加すると全画面で開き、一度開いたあとは通信できない場所でも計算できます。
+        「みんなの声」だけは通信が要ります。</p>
+      </div>
+    </details>
   </div>
 </div>
 
@@ -246,6 +272,14 @@ footer .links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
     <p style="margin-top:14px;">&copy; 2026 Mecha Gauge</p>
   </div>
 </footer>
+
+<script>
+/* 紹介ページからホーム画面に追加した人も、圏外で計算機を開けるようにしておく。
+   ここで登録しておくと、計算機を一度も開いていなくても本体が端末に入る。 */
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+}
+</script>
 
 </body>
 </html>

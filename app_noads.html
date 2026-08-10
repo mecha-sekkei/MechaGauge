@@ -1,15 +1,23 @@
 <!DOCTYPE html>
 <!-- ★ このファイルが開発の正本です（広告なし版）。
      バグ修正・機能追加はすべてこのファイルに入れます。
-     公開用の広告あり版 docs/app.html は凍結中で、
-     「ドキュメントをすべて更新して」の指示が出たときに
-     ./build_variants.sh --release で作り直します。 -->
+     公開するのはこのファイルだけです。
+     広告あり版は非公開側にしか出しません（協賛社名を公開しないため）。
+       ./build_variants.sh --release  → MechGauge/MechGauge/app.html（iOS用）
+       ./build_variants.sh --adsense  → mock/app_adsense.html（手元のモック）
+     詳細は roadmap.md の Phase 21 を参照。 -->
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mecha Gauge">
+<meta name="theme-color" content="#0E1116">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <title>Mecha Gauge — はめあい・ねじ・三角関数 現場ツール</title>
 <style>
 :root{
@@ -5711,6 +5719,15 @@ initDiaToggles();
 // 起動直後の初期描画で履歴が積まれないよう、保留中の1件だけ捨てる
 clearTimeout(histTimer);histPending=null;
 initSplash();initBanner();initAdsense();
+
+/* ホーム画面に追加したときアプリのように動かすための登録。
+   圏外の工場でも開けるようにするのが目的。
+   file:// で直接開いたときは Service Worker が使えないので何もしない。 */
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>
