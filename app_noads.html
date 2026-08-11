@@ -172,6 +172,16 @@ svg text{font-family:ui-monospace,"SF Mono",Menlo,monospace;}
 .dia-body svg{display:block;margin:0 auto;}
 .dia-svg text{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;}
 .dia-dim{stroke:var(--ink-dim);stroke-width:1;}
+/* 切削の立体図。画像で保存（白背景のA4）でも成立するようクラスに逃がしている。
+   白側の値は saveScreenImage が埋め込む<style>のほうにある。両方直すこと。 */
+.dia-raw-top{fill:var(--cut);fill-opacity:.10}
+.dia-raw-l{fill:var(--cut);fill-opacity:.06}
+.dia-raw-r{fill:var(--cut);fill-opacity:.14}
+.dia-cut-face{fill:#FFFFFF;fill-opacity:.17}
+.dia-cut-wall{fill:#FFFFFF;fill-opacity:.10}
+.dia-tool{fill:#1B222C}
+.dia-tool-top{fill:#2A3341}
+.dia-halo{paint-order:stroke;stroke:var(--bg);stroke-linejoin:round}
 .dia-ext{stroke:var(--ink-dim);stroke-width:1;opacity:.6;}
 .dia-val{fill:var(--ink);font-weight:700;}
 .dia-lab{fill:var(--ink-dim);}
@@ -1834,7 +1844,16 @@ function svgForPrint(svg){
   // 図の文字は既定でdia-*クラス頼みなので、最低限のスタイルを埋め込む
   const style='<style>text{font-family:sans-serif;fill:#111820}'+
     '.dia-lab{fill:#55636F}.dia-val{fill:#111820;font-weight:700}'+
-    '.dia-dim{stroke:#55636F}.dia-ext{stroke:#55636F;opacity:.6}</style>';
+    '.dia-dim{stroke:#55636F}.dia-ext{stroke:#55636F;opacity:.6}'+
+    /* 切削の立体図。暗い画面用の色をそのまま白い紙へ持っていくと、
+       工具が黒い塊になり、加工面（白）は紙に溶けて消える。実際にそうなった。 */
+    '.dia-raw-top{fill:#C8402F;fill-opacity:.07}'+
+    '.dia-raw-l{fill:#C8402F;fill-opacity:.04}'+
+    '.dia-raw-r{fill:#C8402F;fill-opacity:.11}'+
+    '.dia-cut-face{fill:#1F6FB2;fill-opacity:.16}'+
+    '.dia-cut-wall{fill:#1F6FB2;fill-opacity:.09}'+
+    '.dia-tool{fill:#E9EEF4}.dia-tool-top{fill:#F7FAFC}'+
+    '.dia-halo{paint-order:stroke;stroke:#FFFFFF;stroke-linejoin:round}</style>';
   xml=xml.replace(/(<svg[^>]*>)/,'$1'+style);
   return {xml,w:vb[2],h:vb[3]};
 }
@@ -3397,62 +3416,159 @@ function calcCut(){
     lines:cHead.concat(["【計算結果】"]).concat(rowsFromDOM("#cutOut")).concat([cBasis]),
     notes:notesFromDOM("#cutWarn")};
 }
-/* フライスの図は「上から見た図」と「横から見た図」を上下に分ける。
-   ae（径方向）と ap（軸方向）は向きが直交しているので、1枚に描くと
-   どちらも同じような矢印になって区別がつかない。実際に分からないと指摘された。 */
+/* フライスの図は「等角の1枚」にする。
+   もとは「上から見た図」と「横から見た図」の2枚だったが、
+   2026-08-10 の調査で次の食い違いが出た（roadmap の不具合節を参照）。
+     ・同じ工具が2枚で違う大きさ（Rt と halfD が別々にクランプされていた）
+     ・ae の寸法が、工具が実際に食い込む位置と別の場所に描かれていた
+     ・工具の食い込み量が常に4px固定で、ae を変えても工具が動かなかった
+     ・上は側面加工、下は溝加工と、同じ条件を別の加工として描いていた
+     ・送り方向が2枚で逆
+   2枚に分けたのは「ae と ap の向きが直交していて1枚だと区別がつかない」
+   ためだったが、立体で描けば向きは形で分かるので分ける必要がない。
+   工具カタログと同じく、1枚の立体図に ap（深さ）・ae（幅）・D（工具径）を
+   すべて同じ縮尺で入れる。
+
+   ★ この図は「結果のコピー」「画像で保存」にも入る。直したら3つとも見ること。 */
 function drawCutMill(c){
   const svg=$("#cutPicSvg");if(!svg)return;
-  svg.setAttribute("viewBox","0 0 360 330");
-  const W=360, mgn=26;
-  let g="";
-  const panel=(y,h,title)=>{
-    let s=`<rect x="8" y="${y}" width="${W-16}" height="${h}" rx="10" fill="none" stroke="var(--line)" stroke-width="1.5"/>`;
-    s+=`<text class="dia-lab" x="18" y="${y+18}" font-size="11.5" font-weight="700">${title}</text>`;
-    return s;
+  const VW=360, VH=250;
+  svg.setAttribute("viewBox","0 0 "+VW+" "+VH);
+
+  const D =Math.max(.1,+c.D ||.1);
+  const ae=Math.max(0 ,+c.ae||0 );
+  const ap=Math.max(0 ,+c.ap||0 );
+  const slot = ae>0 && ae >= D*0.995;      // ae=D なら溝加工。形そのものを描き分ける
+
+  /* ★ D・ae・ap を1つの縮尺で描く。
+     別々に正規化すると「ap=10 と ap=50 が同じ絵」のような嘘になる。 */
+  const sc = 58/Math.max(D, ae, ap, .1);
+  const Dm =D*sc, aeM=Math.max(4,ae*sc), apM=Math.max(4,ap*sc);
+
+  const BX=134;                              // ワーク長さ（送り方向 X）。長いと図が小さくなる
+  // 段の奥に工具径ぶん以上の削り残しを置く。ここが細いと段がどこか分からない
+  const BY=aeM+Math.max(34,Dm*.95);          // ワーク幅（Y）
+  const BZ=Math.min(94,apM+26);              // ワーク高さ（Z）
+  // 工具は ap・ae の寸法を入れる右端寄りに置く。左右に離すと対応が読み取れない
+  const xT=BX*.62;                           // 工具の位置
+  const Yc=BY-aeM+Dm/2;                      // 工具中心。ae と D から一意に決まる
+  const rx=Dm/2*1.2247, ry=Dm/2*.7071;       // 等角では円が軸平行の楕円になる
+  const UP=34;                               // 工具が上へ伸びる長さ
+
+  /* 等角投影。X=送り方向（右下へ）／Y=幅方向（左下へ）／Z=高さ（真上へ） */
+  const p=(X,Y,Z)=>[(X-Y)*.866, (X+Y)*.5-Z];
+
+  /* 収まるように後でまとめて拡縮する。文字は scale で割って実寸を保つ */
+  const Ymax=Math.max(BY,Yc+Dm/2);
+  // 上下にバッジと凡例の帯があるぶん、絵に使える高さは VH-46
+  const bx0=.866*(0-Ymax)-rx-64, bx1=.866*BX+62;   // 左は「送り」の文字ぶん余分に取る
+  const by0=-(BZ+UP)-ry-18,      by1=.5*(BX+Ymax)+30;
+  const k=Math.min(1, (VW-8)/(bx1-bx0), (VH-46)/(by1-by0));
+  const F=(n)=>(n/k).toFixed(1);             // 文字サイズを実寸に戻す
+
+  const CUT="var(--cut)", DIM="var(--ink-dim)";
+  /* 色をベタ書きすると「画像で保存」（白背景のA4）で破綻する。
+     暗い色を直に入れると、白い紙の上で工具が黒い塊になり、加工面は白に溶けて消える。
+     実際にそうなったので、テーマで切り替わるクラスに逃がしている。
+     クラスの定義は本文のCSSと、画像化のときに埋め込む<style>の両方にある。 */
+  const poly=(pts,cls,stroke)=>
+    `<polygon points="${pts.map(q=>q[0].toFixed(1)+","+q[1].toFixed(1)).join(" ")}" `+
+    `class="${cls}" stroke="${stroke||CUT}" stroke-width="1.6" stroke-linejoin="round"/>`;
+
+  /* 等角の斜め寸法線。ae は Y 方向なので水平でも垂直でもない */
+  const dimIso=(a,b,label,ox,oy,lox,loy)=>{
+    const A=[a[0]+ox,a[1]+oy], B=[b[0]+ox,b[1]+oy];
+    const t=Math.atan2(B[1]-A[1],B[0]-A[0]), L=7.5, w=.42;
+    const head=(P,dir)=>{const u=t+(dir>0?0:Math.PI);
+      return `<polygon points="${P[0]},${P[1]} ${P[0]-L*Math.cos(u-w)},${P[1]-L*Math.sin(u-w)} `+
+             `${P[0]-L*Math.cos(u+w)},${P[1]-L*Math.sin(u+w)}" fill="${DIM}"/>`;};
+    return `<line class="dia-ext" x1="${a[0]}" y1="${a[1]}" x2="${A[0]}" y2="${A[1]}"/>`+
+           `<line class="dia-ext" x1="${b[0]}" y1="${b[1]}" x2="${B[0]}" y2="${B[1]}"/>`+
+           `<line class="dia-dim" x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}"/>`+
+           head(A,-1)+head(B,1)+
+           `<text class="dia-val" x="${(A[0]+B[0])/2+(lox||0)}" y="${(A[1]+B[1])/2+(loy||0)}" `+
+           `font-size="${F(12)}" text-anchor="middle">${label}</text>`;
   };
 
-  /* ---- 上：上から見た図（径方向＝ae と 工具径 D） ---- */
-  const ty=6, th=158, cy=ty+92;
-  g+=panel(ty,th,"① 上から見た図（真上から）");
-  const Rt=Math.max(24,Math.min(46,c.D*2.2));
-  const cx=104;
-  // ワーク（上から見ると帯に見える）
-  const wx=cx+Rt-4, wTop=cy-52, wBot=cy+52;
-  g+=`<rect x="${wx}" y="${wTop}" width="${W-wx-mgn}" height="${wBot-wTop}" fill="rgba(252,165,165,.08)" stroke="var(--cut)" stroke-width="2"/>`;
-  // 削り取る幅 ae（工具がワークへ食い込んでいる量）
-  const aePx=Math.max(6,Math.min(Rt*2,(c.ae/Math.max(c.D,0.1))*Rt*2));
-  g+=`<rect x="${wx}" y="${wTop}" width="${Math.min(52,W-wx-mgn)}" height="${aePx}" fill="rgba(252,165,165,.34)"/>`;
-  // 工具（円）と刃
-  g+=`<circle cx="${cx}" cy="${cy}" r="${Rt}" fill="rgba(255,255,255,.03)" stroke="var(--ink-dim)" stroke-width="2"/>`;
-  const nz=Math.max(1,Math.min(8,Math.round(c.z)||1));
-  for(let i=0;i<nz;i++){
-    const a=i*2*Math.PI/nz;
-    g+=`<line x1="${cx}" y1="${cy}" x2="${(cx+Rt*Math.cos(a)).toFixed(1)}" y2="${(cy+Rt*Math.sin(a)).toFixed(1)}" stroke="var(--ink-dim)" stroke-width="1" opacity=".4"/>`;
-  }
-  // z はワークの矩形と重なるので、寸法線の文言にまとめて逃がす
-  g+=dimH(cx-Rt,cx+Rt,cy+Rt+20,"工具径 D="+c.D+" mm・z="+c.z+"枚刃",{above:false});
-  // ae は縦向きの寸法線で示す（横向きの ap と混ざらないように）
-  g+=dimV(wx+Math.min(52,W-wx-mgn)+14,wTop,wTop+aePx,"ae="+c.ae+" mm",{right:true});
-  g+=`<text class="dia-lab" x="${W-mgn}" y="${wBot-8}" font-size="10.5" text-anchor="end">ae＝横に食い込ませる幅</text>`;
+  let g="";
 
-  /* ---- 下：横から見た図（軸方向＝ap） ---- */
-  const sy=ty+th+8, sh=158, surf=sy+66;
-  g+=panel(sy,sh,"② 横から見た図（真横から）");
-  const sx=118, halfD=Math.max(14,Math.min(30,c.D*1.4));
-  // ワーク（横から見ると断面）
-  const wl=48, wr=W-mgn, wbot=surf+64;
-  g+=`<rect x="${wl}" y="${surf}" width="${wr-wl}" height="${wbot-surf}" fill="rgba(252,165,165,.08)" stroke="var(--cut)" stroke-width="2"/>`;
-  // 削り込む深さ ap
-  const apPx=Math.max(5,Math.min(58,(c.ap/Math.max(c.ap,c.D,1))*52));
-  g+=`<rect x="${sx-halfD}" y="${surf}" width="${wr-(sx-halfD)}" height="${apPx}" fill="rgba(252,165,165,.34)"/>`;
-  // 工具（横から見ると長方形）。切り込んだ分だけワークへ入り込む
-  g+=`<rect x="${sx-halfD}" y="${sy+22}" width="${halfD*2}" height="${surf+apPx-(sy+22)}" fill="rgba(255,255,255,.05)" stroke="var(--ink-dim)" stroke-width="2"/>`;
-  g+=`<line x1="${sx}" y1="${sy+16}" x2="${sx}" y2="${surf+apPx+6}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>`;
-  // ap は縦の寸法線。工具径が大きいと左へ寄って枠外へ出るので、位置を固定にする
-  g+=dimV(82,surf,surf+apPx,"ap="+c.ap+" mm",{right:false,ext1:wl,ext2:wl});
-  g+=`<line x1="${wl}" y1="${surf}" x2="${wr}" y2="${surf}" stroke="var(--ink-dim)" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>`;
-  g+=`<text class="dia-lab" x="${W-mgn}" y="${wbot-8}" font-size="10.5" text-anchor="end">ap＝下へ突っ込む深さ</text>`;
-  svg.innerHTML=g;
+  /* ---- ワーク ---- */
+  const zTop=BZ, zCut=BZ-apM, yStep=BY-aeM;
+  // 削り残っている天面
+  g+=poly([p(0,0,zTop),p(BX,0,zTop),p(BX,yStep,zTop),p(0,yStep,zTop)],"dia-raw-top");
+  /* 削ったあとの2面は素材と別の色にする。削り取った範囲がどこかが、この図で
+     一番伝えたいこと。素材と同じ色だと段差が見えず、元の2面図と同じ轍を踏む。 */
+  g+=poly([p(0,yStep,zCut),p(BX,yStep,zCut),p(BX,BY,zCut),p(0,BY,zCut)],"dia-cut-face");
+  if(apM>1) g+=poly([p(0,yStep,zTop),p(BX,yStep,zTop),p(BX,yStep,zCut),p(0,yStep,zCut)],"dia-cut-wall");
+  // 手前左の側面（削られたぶん天端が下がっている）
+  g+=poly([p(0,BY,zCut),p(BX,BY,zCut),p(BX,BY,0),p(0,BY,0)],"dia-raw-l");
+  // 手前右の側面（段付きなのでL字になる）
+  g+=poly([p(BX,0,0),p(BX,0,zTop),p(BX,yStep,zTop),p(BX,yStep,zCut),p(BX,BY,zCut),p(BX,BY,0)],"dia-raw-r");
+
+  /* ---- 送り方向 ---- */
+  // 加工面の、工具より手前（-X側）の空いているところ。
+  // 天面に置くと投影で工具の真上へ来てしまい、D の寸法線と重なる。
+  const f0=p(BX*.06,(yStep+BY)/2,zCut), f1=p(BX*.40,(yStep+BY)/2,zCut);
+  const ft=Math.atan2(f1[1]-f0[1],f1[0]-f0[0]);
+  g+=`<line x1="${f0[0].toFixed(1)}" y1="${f0[1].toFixed(1)}" x2="${f1[0].toFixed(1)}" y2="${f1[1].toFixed(1)}" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/>`;
+  g+=`<polygon points="${f1[0]},${f1[1]} ${f1[0]-11*Math.cos(ft-.4)},${f1[1]-11*Math.sin(ft-.4)} ${f1[0]-11*Math.cos(ft+.4)},${f1[1]-11*Math.sin(ft+.4)}" fill="var(--accent)"/>`;
+  /* 文字は矢印の始点側に置く。中点だと投影の都合で工具の裏に回り込む。
+     ワークの上に載るので、背景色で縁取りしないと読めない。 */
+  g+=`<text class="dia-halo" x="${(f0[0]-7).toFixed(1)}" y="${(f0[1]-7).toFixed(1)}" font-size="${F(11)}" text-anchor="end" `+
+     `fill="var(--accent)" font-weight="700" stroke-width="${F(3.5)}">送り</text>`;
+
+  /* ---- 工具（等角なので円は軸平行の楕円になる） ---- */
+  const tTop=p(xT,Yc,zTop+UP), tBot=p(xT,Yc,zCut);
+  g+=`<path d="M ${(tBot[0]-rx).toFixed(1)} ${tBot[1].toFixed(1)} A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 0 ${(tBot[0]+rx).toFixed(1)} ${tBot[1].toFixed(1)}" fill="none" stroke="${DIM}" stroke-width="1.6"/>`;
+  // 工具は不透明にする。透けているとワークの手前にあるのか奥なのか読めない
+  g+=`<path class="dia-tool" d="M ${(tBot[0]-rx).toFixed(1)} ${tBot[1].toFixed(1)} L ${(tTop[0]-rx).toFixed(1)} ${tTop[1].toFixed(1)} A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 0 ${(tTop[0]+rx).toFixed(1)} ${tTop[1].toFixed(1)} L ${(tBot[0]+rx).toFixed(1)} ${tBot[1].toFixed(1)} Z" stroke="${DIM}" stroke-width="1.8"/>`;
+  g+=`<ellipse class="dia-tool-top" cx="${tTop[0].toFixed(1)}" cy="${tTop[1].toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" stroke="${DIM}" stroke-width="1.8"/>`;
+  // ねじれ刃（回っている刃物であることの合図）
+  const nz=Math.max(1,Math.min(6,Math.round(c.z)||1));
+  for(let i=0;i<nz;i++){
+    const u=-.6+i*(1.2/Math.max(1,nz-1||1));
+    const x0=tTop[0]+rx*u, y0=tTop[1]+ry*Math.sqrt(Math.max(0,1-u*u));
+    g+=`<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${(x0+9).toFixed(1)}" y2="${(tBot[1]).toFixed(1)}" stroke="${DIM}" stroke-width="1" opacity=".33"/>`;
+  }
+
+  /* ---- 寸法 ---- */
+  // ap は高さ方向なので画面上では真の垂直になる
+  const a1=p(BX,yStep,zTop), a2=p(BX,yStep,zCut);
+  g+=`<line class="dia-ext" x1="${a1[0]}" y1="${a1[1]}" x2="${a1[0]+34}" y2="${a1[1]}"/>`+
+     `<line class="dia-ext" x1="${a2[0]}" y1="${a2[1]}" x2="${a1[0]+34}" y2="${a2[1]}"/>`+
+     `<line class="dia-dim" x1="${a1[0]+30}" y1="${a1[1]}" x2="${a1[0]+30}" y2="${a2[1]}"/>`+
+     diaArrow("down",a1[0]+30,a1[1])+diaArrow("up",a1[0]+30,a2[1])+
+     `<text class="dia-val" x="${a1[0]+37}" y="${(a1[1]+a2[1])/2+4}" font-size="${F(12)}" text-anchor="start">ap=${c.ap} mm</text>`;
+
+  // ae は幅方向。斜めの寸法線で示す
+  const e1=p(BX,yStep,zCut), e2=p(BX,BY,zCut);
+  g+=dimIso(e1,e2,"ae="+c.ae+" mm",16,24,0,16);
+
+  // D は工具の天面。等角の楕円は長軸が水平なのでそのまま測れる
+  g+=dimH(tTop[0]-rx,tTop[0]+rx,tTop[1]-ry-16,"D="+c.D+" mm・z="+c.z+"枚刃",{ext1:tTop[1]-2,ext2:tTop[1]-2});
+
+  /* ---- 溝加工か肩削りかを、形だけでなく文字でも出す ----
+     形（工具が材料に全幅入っているか、横に一部だけか）は絵から読めるが、
+     初めて見る人には「これは溝加工だ」と言い切ってあるほうが早い。 */
+  const badge = (ae>D*1.005)
+    ? {t:"⚠ ae が工具径 D を超えています。1パスでは削れません", c:"var(--ng)"}
+    : slot
+    ? {t:"溝加工　ae = D　工具の全幅が材料に入っている", c:"var(--shaft)"}
+    : {t:"肩削り（側面加工）　ae &lt; D　工具の横の一部だけが当たっている", c:"var(--accent)"};
+
+  /* ---- 収まるように拡縮してから配置 ---- */
+  const gx=(-bx0)*k+4, gy=(-by0)*k+4+16;
+  let out="";
+  // 上：どの加工なのか
+  out+=`<rect x="8" y="4" width="344" height="21" rx="6" fill="${badge.c}" fill-opacity=".13"/>`;
+  out+=`<text x="180" y="18.5" font-size="11.5" text-anchor="middle" style="fill:${badge.c};font-weight:700">${badge.t}</text>`;
+  // 本体
+  out+=`<g transform="translate(${gx.toFixed(1)},${gy.toFixed(1)}) scale(${k.toFixed(3)})">${g}</g>`;
+  // 下：記号の意味をまとめて置く。寸法線ごとに添えると図が字だらけになる
+  out+=`<text class="dia-lab" x="180" y="${VH-8}" font-size="10.5" text-anchor="middle">`+
+       `ap＝下へ削る深さ　／　ae＝横に食い込ませる幅　／　D＝工具径</text>`;
+
+  svg.innerHTML=out;
 }
 function drawCutDrill(c,tip){
   const svg=$("#cutPicSvg");if(!svg)return;
