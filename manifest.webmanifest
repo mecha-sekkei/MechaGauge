@@ -1,6 +1,6 @@
 {
-  "name": "Mecha Gauge — 機械加工の現場計算ツール",
-  "short_name": "Mecha Gauge",
+  "name": "Mecha Gauge 機械加工の計算ツール（はめあい・タップ下穴・締付トルク・切削条件）",
+  "short_name": "Mecha計算",
   "description": "はめあい・ねじ・三角関数・強度・切削条件・梁のたわみ・タクトタイム・重量を、現場で最短に。計算はすべて端末内で完結します。",
   "lang": "ja",
   "dir": "ltr",
