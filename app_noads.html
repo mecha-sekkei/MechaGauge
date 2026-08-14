@@ -3461,7 +3461,8 @@ function drawCutMill(c){
   /* 収まるように後でまとめて拡縮する。文字は scale で割って実寸を保つ */
   const Ymax=Math.max(BY,Yc+Dm/2);
   // 上下にバッジと凡例の帯があるぶん、絵に使える高さは VH-46
-  const bx0=.866*(0-Ymax)-rx-64, bx1=.866*BX+62;   // 左は「送り」の文字ぶん余分に取る
+  // 左は「送り」の文字ぶん、右は外形線の延長へ逃がした寸法ぶん余分に取る
+  const bx0=.866*(0-Ymax)-rx-64, bx1=.866*(BX+105)+56;
   const by0=-(BZ+UP)-ry-18,      by1=.5*(BX+Ymax)+30;
   const k=Math.min(1, (VW-8)/(bx1-bx0), (VH-46)/(by1-by0));
   const F=(n)=>(n/k).toFixed(1);             // 文字サイズを実寸に戻す
@@ -3475,25 +3476,18 @@ function drawCutMill(c){
     `<polygon points="${pts.map(q=>q[0].toFixed(1)+","+q[1].toFixed(1)).join(" ")}" `+
     `class="${cls}" stroke="${stroke||CUT}" stroke-width="1.6" stroke-linejoin="round"/>`;
 
-  /* 等角の斜め寸法線。ae は Y 方向なので水平でも垂直でもない */
-  const dimIso=(a,b,label,ox,oy,lox,loy)=>{
-    const A=[a[0]+ox,a[1]+oy], B=[b[0]+ox,b[1]+oy];
-    const t=Math.atan2(B[1]-A[1],B[0]-A[0]), L=7.5, w=.42;
-    const head=(P,dir)=>{const u=t+(dir>0?0:Math.PI);
-      return `<polygon points="${P[0]},${P[1]} ${P[0]-L*Math.cos(u-w)},${P[1]-L*Math.sin(u-w)} `+
-             `${P[0]-L*Math.cos(u+w)},${P[1]-L*Math.sin(u+w)}" fill="${DIM}"/>`;};
-    return `<line class="dia-ext" x1="${a[0]}" y1="${a[1]}" x2="${A[0]}" y2="${A[1]}"/>`+
-           `<line class="dia-ext" x1="${b[0]}" y1="${b[1]}" x2="${B[0]}" y2="${B[1]}"/>`+
-           `<line class="dia-dim" x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}"/>`+
-           head(A,-1)+head(B,1)+
-           `<text class="dia-val" x="${(A[0]+B[0])/2+(lox||0)}" y="${(A[1]+B[1])/2+(loy||0)}" `+
-           `font-size="${F(12)}" text-anchor="middle">${label}</text>`;
-  };
+  /* 任意の向きの矢じり */
+  const ahead=(P,ang,L)=>{const w=.42;
+    return `<polygon points="${P[0].toFixed(1)},${P[1].toFixed(1)} `+
+           `${(P[0]-L*Math.cos(ang-w)).toFixed(1)},${(P[1]-L*Math.sin(ang-w)).toFixed(1)} `+
+           `${(P[0]-L*Math.cos(ang+w)).toFixed(1)},${(P[1]-L*Math.sin(ang+w)).toFixed(1)}" fill="${DIM}"/>`;};
 
   let g="";
 
   /* ---- ワーク ---- */
   const zTop=BZ, zCut=BZ-apM, yStep=BY-aeM;
+  // 工具の座標は送りの矢印を切り上げるのにも要るので、描く前に出しておく
+  const tTop=p(xT,Yc,zTop+UP), tBot=p(xT,Yc,zCut);
   // 削り残っている天面
   g+=poly([p(0,0,zTop),p(BX,0,zTop),p(BX,yStep,zTop),p(0,yStep,zTop)],"dia-raw-top");
   /* 削ったあとの2面は素材と別の色にする。削り取った範囲がどこかが、この図で
@@ -3506,19 +3500,22 @@ function drawCutMill(c){
   g+=poly([p(BX,0,0),p(BX,0,zTop),p(BX,yStep,zTop),p(BX,yStep,zCut),p(BX,BY,zCut),p(BX,BY,0)],"dia-raw-r");
 
   /* ---- 送り方向 ---- */
-  // 加工面の、工具より手前（-X側）の空いているところ。
-  // 天面に置くと投影で工具の真上へ来てしまい、D の寸法線と重なる。
-  const f0=p(BX*.06,(yStep+BY)/2,zCut), f1=p(BX*.40,(yStep+BY)/2,zCut);
+  /* 加工面の上を、工具の手前まで走らせる。
+     ★ 終点は計算で切り上げる。工具は画面上 [tBot[0]-rx, tBot[0]+rx] を占めるので、
+       そこへ届く前で止める。固定長にすると工具径を変えたときに刃物と重なる。
+     天面に置くと投影で工具の真上へ来てしまい、D の寸法線と重なる。 */
+  const Yf=(yStep+BY)/2;
+  const xLim=(tBot[0]-rx-12)/.866+Yf;
+  const f0=p(BX*.04,Yf,zCut), f1=p(Math.max(BX*.20,Math.min(BX*.52,xLim)),Yf,zCut);
   const ft=Math.atan2(f1[1]-f0[1],f1[0]-f0[0]);
-  g+=`<line x1="${f0[0].toFixed(1)}" y1="${f0[1].toFixed(1)}" x2="${f1[0].toFixed(1)}" y2="${f1[1].toFixed(1)}" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/>`;
-  g+=`<polygon points="${f1[0]},${f1[1]} ${f1[0]-11*Math.cos(ft-.4)},${f1[1]-11*Math.sin(ft-.4)} ${f1[0]-11*Math.cos(ft+.4)},${f1[1]-11*Math.sin(ft+.4)}" fill="var(--accent)"/>`;
+  g+=`<line x1="${f0[0].toFixed(1)}" y1="${f0[1].toFixed(1)}" x2="${f1[0].toFixed(1)}" y2="${f1[1].toFixed(1)}" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round"/>`;
+  g+=`<polygon points="${f1[0].toFixed(1)},${f1[1].toFixed(1)} ${(f1[0]-13*Math.cos(ft-.42)).toFixed(1)},${(f1[1]-13*Math.sin(ft-.42)).toFixed(1)} ${(f1[0]-13*Math.cos(ft+.42)).toFixed(1)},${(f1[1]-13*Math.sin(ft+.42)).toFixed(1)}" fill="var(--accent)"/>`;
   /* 文字は矢印の始点側に置く。中点だと投影の都合で工具の裏に回り込む。
      ワークの上に載るので、背景色で縁取りしないと読めない。 */
-  g+=`<text class="dia-halo" x="${(f0[0]-7).toFixed(1)}" y="${(f0[1]-7).toFixed(1)}" font-size="${F(11)}" text-anchor="end" `+
+  g+=`<text class="dia-halo" x="${(f0[0]-7).toFixed(1)}" y="${(f0[1]-7).toFixed(1)}" font-size="${F(11.5)}" text-anchor="end" `+
      `fill="var(--accent)" font-weight="700" stroke-width="${F(3.5)}">送り</text>`;
 
   /* ---- 工具（等角なので円は軸平行の楕円になる） ---- */
-  const tTop=p(xT,Yc,zTop+UP), tBot=p(xT,Yc,zCut);
   g+=`<path d="M ${(tBot[0]-rx).toFixed(1)} ${tBot[1].toFixed(1)} A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 0 ${(tBot[0]+rx).toFixed(1)} ${tBot[1].toFixed(1)}" fill="none" stroke="${DIM}" stroke-width="1.6"/>`;
   // 工具は不透明にする。透けているとワークの手前にあるのか奥なのか読めない
   g+=`<path class="dia-tool" d="M ${(tBot[0]-rx).toFixed(1)} ${tBot[1].toFixed(1)} L ${(tTop[0]-rx).toFixed(1)} ${tTop[1].toFixed(1)} A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 0 ${(tTop[0]+rx).toFixed(1)} ${tTop[1].toFixed(1)} L ${(tBot[0]+rx).toFixed(1)} ${tBot[1].toFixed(1)} Z" stroke="${DIM}" stroke-width="1.8"/>`;
@@ -3531,18 +3528,32 @@ function drawCutMill(c){
     g+=`<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${(x0+9).toFixed(1)}" y2="${(tBot[1]).toFixed(1)}" stroke="${DIM}" stroke-width="1" opacity=".33"/>`;
   }
 
-  /* ---- 寸法 ---- */
-  // ap は高さ方向なので画面上では真の垂直になる
-  const a1=p(BX,yStep,zTop), a2=p(BX,yStep,zCut);
-  g+=`<line class="dia-ext" x1="${a1[0]}" y1="${a1[1]}" x2="${a1[0]+34}" y2="${a1[1]}"/>`+
-     `<line class="dia-ext" x1="${a2[0]}" y1="${a2[1]}" x2="${a1[0]+34}" y2="${a2[1]}"/>`+
-     `<line class="dia-dim" x1="${a1[0]+30}" y1="${a1[1]}" x2="${a1[0]+30}" y2="${a2[1]}"/>`+
-     diaArrow("down",a1[0]+30,a1[1])+diaArrow("up",a1[0]+30,a2[1])+
-     `<text class="dia-val" x="${a1[0]+37}" y="${(a1[1]+a2[1])/2+4}" font-size="${F(12)}" text-anchor="start">ap=${c.ap} mm</text>`;
+  /* ---- 寸法 ----
+     ★ 補助線は「外形線そのものの延長」に置く。
+       等角では画面の水平・垂直と物体の稜が別の向きなので、画面の水平に引くと
+       稜と斜めに交差して実体に重なる。測っている辺に集まる稜を +X へ伸ばし、
+       その延長線上に寸法線を置くのが正しい。
+       ap と ae で逃がす距離を変え、寸法線どうしの重なりも避けている。 */
+  const OA=38, OE=74;
 
-  // ae は幅方向。斜めの寸法線で示す
-  const e1=p(BX,yStep,zCut), e2=p(BX,BY,zCut);
-  g+=dimIso(e1,e2,"ae="+c.ae+" mm",16,24,0,16);
+  // ap: 段の壁の縦稜。天面線と段底線を +X へ伸ばした線の上に置く
+  const a1=p(BX,yStep,zTop), a2=p(BX,yStep,zCut);
+  const A1=p(BX+OA,yStep,zTop), A2=p(BX+OA,yStep,zCut);
+  g+=`<line class="dia-ext" x1="${a1[0].toFixed(1)}" y1="${a1[1].toFixed(1)}" x2="${(A1[0]+6).toFixed(1)}" y2="${A1[1].toFixed(1)}"/>`+
+     `<line class="dia-ext" x1="${a2[0].toFixed(1)}" y1="${a2[1].toFixed(1)}" x2="${(A2[0]+6).toFixed(1)}" y2="${A2[1].toFixed(1)}"/>`+
+     `<line class="dia-dim" x1="${A1[0].toFixed(1)}" y1="${A1[1].toFixed(1)}" x2="${A2[0].toFixed(1)}" y2="${A2[1].toFixed(1)}"/>`+
+     ahead(A1,Math.PI/2,7)+ahead(A2,-Math.PI/2,7)+
+     `<text class="dia-val" x="${(A1[0]+11).toFixed(1)}" y="${((A1[1]+A2[1])/2+4).toFixed(1)}" font-size="${F(12)}" text-anchor="start">ap=${c.ap} mm</text>`;
+
+  // ae: 加工面の手前稜。段底線と手前上稜を +X へ伸ばした線の上に置く
+  const b1=p(BX,yStep,zCut), b2=p(BX,BY,zCut);
+  const B1=p(BX+OE,yStep,zCut), B2=p(BX+OE,BY,zCut);
+  const bt=Math.atan2(B2[1]-B1[1],B2[0]-B1[0]);
+  g+=`<line class="dia-ext" x1="${b1[0].toFixed(1)}" y1="${b1[1].toFixed(1)}" x2="${B1[0].toFixed(1)}" y2="${B1[1].toFixed(1)}"/>`+
+     `<line class="dia-ext" x1="${b2[0].toFixed(1)}" y1="${b2[1].toFixed(1)}" x2="${B2[0].toFixed(1)}" y2="${B2[1].toFixed(1)}"/>`+
+     `<line class="dia-dim" x1="${B1[0].toFixed(1)}" y1="${B1[1].toFixed(1)}" x2="${B2[0].toFixed(1)}" y2="${B2[1].toFixed(1)}"/>`+
+     ahead(B1,bt+Math.PI,7.5)+ahead(B2,bt,7.5)+
+     `<text class="dia-val" x="${((B1[0]+B2[0])/2-14).toFixed(1)}" y="${((B1[1]+B2[1])/2+16).toFixed(1)}" font-size="${F(12)}" text-anchor="middle">ae=${c.ae} mm</text>`;
 
   // D は工具の天面。等角の楕円は長軸が水平なのでそのまま測れる
   g+=dimH(tTop[0]-rx,tTop[0]+rx,tTop[1]-ry-16,"D="+c.D+" mm・z="+c.z+"枚刃",{ext1:tTop[1]-2,ext2:tTop[1]-2});
