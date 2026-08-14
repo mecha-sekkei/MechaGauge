@@ -3515,17 +3515,30 @@ function drawCutMill(c){
   g+=`<text class="dia-halo" x="${(f0[0]-7).toFixed(1)}" y="${(f0[1]-7).toFixed(1)}" font-size="${F(11.5)}" text-anchor="end" `+
      `fill="var(--accent)" font-weight="700" stroke-width="${F(3.5)}">送り</text>`;
 
-  /* ---- 工具（等角なので円は軸平行の楕円になる） ---- */
-  g+=`<path d="M ${(tBot[0]-rx).toFixed(1)} ${tBot[1].toFixed(1)} A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 0 ${(tBot[0]+rx).toFixed(1)} ${tBot[1].toFixed(1)}" fill="none" stroke="${DIM}" stroke-width="1.6"/>`;
+  /* ---- 工具（等角なので円は軸平行の楕円になる） ----
+     ★ 胴体は底を「弦」ではなく「底面の弧」で閉じる。
+       弦で閉じると、その下に見えている底面の弧との間が三日月形に塗り残る。
+       実際そうなっていた（刃物の下端だけ塗られていない、と指摘を受けた）。
+       行きの上面弧は sweep=0（下へ膨らむ＝手前側）、
+       帰りの底面弧は同じ曲線を逆にたどるので sweep=1 にする。 */
+  const arcBottomY=(x)=>{                      // 底面の弧の、その x での y
+    const u=Math.max(-1,Math.min(1,(x-tBot[0])/rx));
+    return tBot[1]+ry*Math.sqrt(Math.max(0,1-u*u));
+  };
   // 工具は不透明にする。透けているとワークの手前にあるのか奥なのか読めない
-  g+=`<path class="dia-tool" d="M ${(tBot[0]-rx).toFixed(1)} ${tBot[1].toFixed(1)} L ${(tTop[0]-rx).toFixed(1)} ${tTop[1].toFixed(1)} A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 0 ${(tTop[0]+rx).toFixed(1)} ${tTop[1].toFixed(1)} L ${(tBot[0]+rx).toFixed(1)} ${tBot[1].toFixed(1)} Z" stroke="${DIM}" stroke-width="1.8"/>`;
+  g+=`<path class="dia-tool" d="M ${(tBot[0]-rx).toFixed(1)} ${tBot[1].toFixed(1)}`+
+     ` L ${(tTop[0]-rx).toFixed(1)} ${tTop[1].toFixed(1)}`+
+     ` A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 0 ${(tTop[0]+rx).toFixed(1)} ${tTop[1].toFixed(1)}`+
+     ` L ${(tBot[0]+rx).toFixed(1)} ${tBot[1].toFixed(1)}`+
+     ` A ${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 1 ${(tBot[0]-rx).toFixed(1)} ${tBot[1].toFixed(1)}`+
+     ` Z" stroke="${DIM}" stroke-width="1.8"/>`;
   g+=`<ellipse class="dia-tool-top" cx="${tTop[0].toFixed(1)}" cy="${tTop[1].toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" stroke="${DIM}" stroke-width="1.8"/>`;
-  // ねじれ刃（回っている刃物であることの合図）
+  // ねじれ刃（回っている刃物であることの合図）。下端は底面の弧まで伸ばす
   const nz=Math.max(1,Math.min(6,Math.round(c.z)||1));
   for(let i=0;i<nz;i++){
     const u=-.6+i*(1.2/Math.max(1,nz-1||1));
     const x0=tTop[0]+rx*u, y0=tTop[1]+ry*Math.sqrt(Math.max(0,1-u*u));
-    g+=`<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${(x0+9).toFixed(1)}" y2="${(tBot[1]).toFixed(1)}" stroke="${DIM}" stroke-width="1" opacity=".33"/>`;
+    g+=`<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${(x0+9).toFixed(1)}" y2="${arcBottomY(x0+9).toFixed(1)}" stroke="${DIM}" stroke-width="1" opacity=".33"/>`;
   }
 
   /* ---- 寸法 ----
