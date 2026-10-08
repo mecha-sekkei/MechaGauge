@@ -2037,7 +2037,8 @@ function saveScreenImage(screen,btn){
   /* 明細は2段組で流し込む。
      1行に「項目: 値」しか置かないと右半分がまるごと空き、
      行数の多い画面（タクトタイムは30行あった）がA4に収まらなくなる。
-     半分の幅で2行を超えるものと見出しは、その項目だけ全幅で置く。 */
+     半分の幅で1行に収まらないものと見出しは、その項目だけ全幅で置く。
+     （以前は2行まで半分の幅に詰めていたが、括弧や単位だけが2行目に落ちて読みにくかった） */
   const GAP=44, COLW=(W-M*2-GAP)/2;
   let col=0, rowTop=y, rowH=0;
   const flush=()=>{ if(col>0){y=rowTop+rowH;col=0;rowH=0;} rowTop=y; };
@@ -2074,7 +2075,7 @@ function saveScreenImage(screen,btn){
   };
   L.lines.forEach(line=>{
     const head=/^【/.test(line);
-    if(head||measure(line,COLW)>42*2+14){        // 見出しと長い項目は全幅
+    if(head||measure(line,COLW)>42+14){          // 見出しと、半分の幅で1行に収まらない項目は全幅
       flush();
       if(head)y+=8;
       y+=put(line,M,y,W-M*2);
@@ -2157,20 +2158,47 @@ function saveScreenImage(screen,btn){
     finish();
   })();
 }
-function countLines(ctx,text,maxW){
-  let n=1,line="";
-  for(const ch of String(text)){
-    if(ctx.measureText(line+ch).width>maxW){n++;line=ch;}else line+=ch;
+/* 画像に書く文字の折り返し。
+   以前は幅を超えた文字でそのまま切っていたため、「）」や「2」だけが次の行に
+   落ちて読みにくかった（止め輪・キーの画像で目立った）。
+   ・行頭に閉じ括弧・句読点を置かない、行末に開き括弧を残さない（禁則）
+   ・行の後半に空白・「（」の手前・「、/」の後ろがあれば、そこで切る */
+const WRAP_NOSTART="）)」』】〕〉、。，．,.・：:；;！？!?ー〜～%％";
+const WRAP_NOEND="（(「『【〔〈";
+function wrapLines(ctx,text,maxW){
+  const chars=Array.from(String(text));
+  const lines=[];let line=[];
+  const w=a=>ctx.measureText(a.join("")).width;
+  for(const ch of chars){
+    if(line.length&&w(line.concat(ch))>maxW){
+      let cut=-1;
+      for(let j=line.length-1;j>=Math.max(1,Math.floor(line.length*0.55));j--){
+        const c=line[j],pv=line[j-1];
+        const next=(j+1<line.length?line[j+1]:ch);
+        if((c===" "||c==="　")&&!WRAP_NOSTART.includes(next)){cut=j+1;break;}   // 空白の後ろ
+        if(WRAP_NOEND.includes(c)&&!WRAP_NOEND.includes(pv)){cut=j;break;}         // 開き括弧の前
+        if("、，/／".includes(pv)&&!WRAP_NOSTART.includes(c)){cut=j;break;}       // 区切りの後ろ
+      }
+      if(cut<0){
+        cut=line.length;
+        // 行頭禁則：次の文字が閉じ括弧などなら、前の1文字ごと次の行へ送る
+        while(cut>1&&WRAP_NOSTART.includes(cut===line.length?ch:line[cut]))cut--;
+        // 行末禁則：開き括弧で終わるなら次の行へ
+        while(cut>1&&WRAP_NOEND.includes(line[cut-1]))cut--;
+      }
+      const head=line.slice(0,cut).join("").replace(/[ 　]+$/,"");
+      lines.push(head);
+      line=line.slice(cut);
+      while(line.length&&(line[0]===" "||line[0]==="　"))line.shift();
+    }
+    line.push(ch);
   }
-  return n;
+  lines.push(line.join(""));
+  return lines;
 }
+function countLines(ctx,text,maxW){return wrapLines(ctx,text,maxW).length;}
 function wrapText(ctx,text,X,Y,maxW,lh){
-  let line="",yy=Y;
-  for(const ch of String(text)){
-    if(ctx.measureText(line+ch).width>maxW){ctx.fillText(line,X,yy);yy+=lh;line=ch;}
-    else line+=ch;
-  }
-  ctx.fillText(line,X,yy);
+  wrapLines(ctx,text,maxW).forEach((ln,i)=>ctx.fillText(ln,X,Y+i*lh));
 }
 function downloadCanvas(cv,screen,btn){
   const name="MechaGauge_"+screen+"_"+new Date().toISOString().slice(0,19).replace(/[:T-]/g,"")+".png";
@@ -5235,11 +5263,11 @@ function renderRing(){
   const depth=dRef==null?null:Math.abs(dRef-r.d2)/2;
   let h="";
   h+=spec(isE?"適用軸径 d1":"適用する"+K.axis+"径 d1",
-    isE?r.d1lo+" を超え "+r.d1hi+" 以下":dimTxt(r.nom)+" mm","参考（推奨寸法）");
+    isE?r.d1lo+" を超え "+r.d1hi+" 以下":dimTxt(r.nom)+" mm","推奨寸法・参考");
   h+=spec("溝径 d2",dimTxt(r.d2)+" mm",tolMM(r.d2tol.up,r.d2tol.low),true);
-  h+=spec("溝幅 m",dimTxt(r.m)+" mm",tolMM(r.mtol.up,r.mtol.low)+(ringState.std==="din"&&!isE?"（H13）":""),true);
+  h+=spec("溝幅 m",dimTxt(r.m)+" mm",tolMM(r.mtol.up,r.mtol.low)+(ringState.std==="din"&&!isE?"・H13":""),true);
   if(depth!=null)h+=spec("溝の深さ",depth.toFixed(depth<1?3:2)+" mm",
-    "(φ"+dimTxt(dRef)+" − φ"+dimTxt(r.d2)+")÷2");
+    "φ"+dimTxt(dRef)+" − φ"+dimTxt(r.d2)+" の半分");
   h+=spec("溝から"+K.axis+"端まで n",dimTxt(r.n)+" mm","最小");
   h+=spec("止め輪の厚さ t",dimTxt(r.t)+" mm");
   if(isE){
@@ -5459,21 +5487,21 @@ function renderKey(){
   const keyHc=old?F.kh:(k.h<=6?["h",9]:["h",11]);   // 角形(〜6×6)は h9、長方形(8×7〜)は h11
   let h="";
   h+=spec("適用軸径（参考）",rangeTxt(k,firstOf(k))+" mm");
-  h+=spec("キー幅 b",dimTxt(k.b),(old?cls(F.key[0],F.key[1]):"h9")+"（"+keyB+"）");
-  h+=spec("キー高さ h",dimTxt(k.h),cls(keyHc[0],keyHc[1])+"（"+sT(keyHc[0],keyHc[1],k.h)+"）");
+  h+=spec("キー幅 b",dimTxt(k.b),(old?cls(F.key[0],F.key[1]):"h9")+"　"+keyB);
+  h+=spec("キー高さ h",dimTxt(k.h),cls(keyHc[0],keyHc[1])+"　"+sT(keyHc[0],keyHc[1],k.h));
   h+=spec("キーの面取り c",k.c+" mm");
   $("#keyName").textContent=k.name;
   $("#keySpecs").innerHTML=h;
 
   let gr="";
-  gr+=spec("軸溝の幅 b1",dimTxt(k.b),cls(F.b1[0],F.b1[1])+"（"+hT(F.b1[0],F.b1[1],k.b)+"）",true);
-  gr+=spec("穴溝の幅 b2",dimTxt(k.b),cls(F.b2[0],F.b2[1])+"（"+hT(F.b2[0],F.b2[1],k.b)+"）",true);
+  gr+=spec("軸溝の幅 b1",dimTxt(k.b),cls(F.b1[0],F.b1[1])+"　"+hT(F.b1[0],F.b1[1],k.b),true);
+  gr+=spec("穴溝の幅 b2",dimTxt(k.b),cls(F.b2[0],F.b2[1])+"　"+hT(F.b2[0],F.b2[1],k.b),true);
   gr+=spec("軸溝の深さ t1",dimTxt(k.t1),tolMM(tTol,0));
   gr+=spec("穴溝の深さ t2",dimTxt(k.t2),tolMM(tTol,0));
   gr+=spec("溝の隅 r1・r2",k.r+" mm");
   // 図面には深さより「反対側から溝底まで」を書くことが多いので、探した軸径で計算して出す
-  gr+=spec("軸：反対側〜溝底 d−t1",dimTxt(d-k.t1),tolMM(0,-tTol)+"　φ"+d+" の場合",true);
-  gr+=spec("穴：反対側〜溝底 d+t2",dimTxt(d+k.t2),tolMM(tTol,0)+"　φ"+d+" の場合",true);
+  gr+=spec("軸：反対側〜溝底 d−t1",dimTxt(d-k.t1),tolMM(0,-tTol)+"・φ"+d+" のとき",true);
+  gr+=spec("穴：反対側〜溝底 d+t2",dimTxt(d+k.t2),tolMM(tTol,0)+"・φ"+d+" のとき",true);
   $("#keyGroove").innerHTML=gr;
 
   let w="";
